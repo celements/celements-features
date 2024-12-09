@@ -25,10 +25,10 @@
   <parent>
     <groupId>com.celements</groupId>
     <artifactId>celements</artifactId>
-    <version>6.1-SNAPSHOT</version>
+    <version>6.1</version>
   </parent>
   <artifactId>celements-search-lucene</artifactId>
-  <version>6.2-SNAPSHOT</version>
+  <version>6.3-SNAPSHOT</version>
   <name>Celements Search Lucene</name>
   <dependencies>
     <dependency>
