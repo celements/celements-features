@@ -3,13 +3,25 @@
   <parent>
     <groupId>com.celements</groupId>
     <artifactId>celements</artifactId>
-    <version>6.0</version>
+    <version>6.1</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>celements-layout</artifactId>
   <version>6.1-SNAPSHOT</version>
   <description>Celements Layout</description>
   <dependencies>
+    <dependency>
+      <groupId>com.celements</groupId>
+      <artifactId>celements-core</artifactId>
+      <version>6.10-SNAPSHOT</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.celements</groupId>
+      <artifactId>celements-model</artifactId>
+      <version>6.3</version>
+      <scope>provided</scope>
+    </dependency>
   </dependencies>
   <scm>
     <connection>scm:git:git@github.com:celements/celements-base.git</connection>
