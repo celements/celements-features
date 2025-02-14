@@ -63,10 +63,12 @@ public class LayoutController {
     return layoutService.renderLayoutAsJson(layoutRef);
   }
 
+  // TODO CELDEV-1270 Encoding default of Celements is not UTF-8, that's why we had to set it
+  // explicitly.
   @CrossOrigin(origins = "*")
   @GetMapping(
       value = "/partial",
-      produces = MediaType.APPLICATION_XML_VALUE)
+      produces = MediaType.APPLICATION_XML_VALUE + ";charset=UTF-8")
   String renderLayoutPartial(RenderPartialRequest renderPartialRequest) {
     LOGGER.info("GET ModelAttribute renderLayoutPartial: {}", renderPartialRequest);
     var contextDocRef = buildDocRef(renderPartialRequest.getContextDocSpace(),
