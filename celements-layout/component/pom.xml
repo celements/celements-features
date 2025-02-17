@@ -24,9 +24,9 @@
     </dependency>
   </dependencies>
   <scm>
-    <connection>scm:git:git@github.com:celements/celements-base.git</connection>
-    <developerConnection>scm:git:git@github.com:celements/celements-base.git</developerConnection>
-    <url>https://github.com/celements/celements-base</url>
+    <connection>scm:git:git@github.com:celements/celements-features.git</connection>
+    <developerConnection>scm:git:git@github.com:celements/celements-features.git</developerConnection>
+    <url>https://github.com/celements/celements-features</url>
     <tag>HEAD</tag>
   </scm>
 </project>
