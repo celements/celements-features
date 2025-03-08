@@ -25,18 +25,19 @@ import junit.framework.TestCase;
 /**
  * Unit tests for {@link com.xpn.xwiki.plugin.mailsender.Mail}.
  */
-public class MailTest extends TestCase
-{
-    public void testToString()
-    {
-        Mail mail = new Mail();
-        mail.setFrom("john@acme.org");
-        mail.setTo("peter@acme.org");
-        mail.setSubject("Test subject");
-        mail.setTextPart("Text content");
-        mail.setHeader("header1", "value1");
-        mail.setHeader("header2", "value2");
-        assertEquals("From [john@acme.org], To [peter@acme.org], Subject [Test subject], Text [Text content], "
-            + "Headers [[header1] = [value1][header2] = [value2]]", mail.toString());
-    }
+public class MailTest extends TestCase {
+
+  public void testToString() {
+    Mail mail = new Mail();
+    mail.setFrom("john@acme.org");
+    mail.setTo("peter@acme.org");
+    mail.setSubject("Test subject");
+    mail.setTextPart("Text content");
+    mail.setHeader("header1", "value1");
+    mail.setHeader("header2", "value2");
+    assertEquals(
+        "From [john@acme.org], To [peter@acme.org], Subject [Test subject], Text [Text content], "
+            + "Headers [[header1] = [value1][header2] = [value2]]",
+        mail.toString());
+  }
 }
