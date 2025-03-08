@@ -34,171 +34,155 @@ import com.xpn.xwiki.api.XWiki;
  * 
  * @version $Id$
  */
-public class MailConfiguration
-{
-    private int port;
+public class MailConfiguration {
 
-    private String host;
+  private int port;
 
-    private String from;
+  private String host;
 
-    private String smtpUsername;
+  private String from;
 
-    private String smtpPassword;
+  private String smtpUsername;
 
-    private Properties extraProperties;
+  private String smtpPassword;
 
-    public MailConfiguration()
-    {
-        setPort(25);
-        setHost("localhost");
+  private Properties extraProperties;
+
+  public MailConfiguration() {
+    setPort(25);
+    setHost("localhost");
+  }
+
+  public MailConfiguration(XWiki xwiki) {
+    this();
+
+    String smtpServer = xwiki.getXWikiPreference("smtp_server");
+    if (!StringUtils.isBlank(smtpServer)) {
+      setHost(smtpServer);
     }
 
-    public MailConfiguration(XWiki xwiki)
-    {
-        this();
+    int port = xwiki.getXWikiPreferenceAsInt("smtp_port", 25);
+    setPort(port);
 
-        String smtpServer = xwiki.getXWikiPreference("smtp_server");
-        if (!StringUtils.isBlank(smtpServer)) {
-            setHost(smtpServer);
+    String from = xwiki.getXWikiPreference("smtp_from");
+    if (!StringUtils.isBlank(from)) {
+      setFrom(from);
+    }
+
+    String smtpServerUsername = xwiki.getXWikiPreference("smtp_server_username");
+    String smtpServerPassword = xwiki.getXWikiPreference("smtp_server_password");
+    if (!StringUtils.isEmpty(smtpServerUsername) && !StringUtils.isEmpty(smtpServerPassword)) {
+      setSmtpUsername(smtpServerUsername);
+      setSmtpPassword(smtpServerPassword);
+    }
+
+    String javaMailExtraProps = xwiki.getXWikiPreference("javamail_extra_props");
+    if (!StringUtils.isEmpty(javaMailExtraProps)) {
+      setExtraProperties(javaMailExtraProps);
+    }
+  }
+
+  public void setHost(String host) {
+    this.host = host;
+  }
+
+  public String getHost() {
+    return this.host;
+  }
+
+  public void setPort(int port) {
+    this.port = port;
+  }
+
+  public int getPort() {
+    return this.port;
+  }
+
+  public void setFrom(String from) {
+    this.from = from;
+  }
+
+  public String getFrom() {
+    return this.from;
+  }
+
+  public void setSmtpUsername(String smtpUsername) {
+    this.smtpUsername = smtpUsername;
+  }
+
+  public String getSmtpUsername() {
+    return this.smtpUsername;
+  }
+
+  public void setSmtpPassword(String smtpPassword) {
+    this.smtpPassword = smtpPassword;
+  }
+
+  public String getSmtpPassword() {
+    return this.smtpPassword;
+  }
+
+  public boolean usesAuthentication() {
+    return !StringUtils.isEmpty(getSmtpUsername()) && !StringUtils.isEmpty(getSmtpPassword());
+  }
+
+  public void setExtraProperties(String extraPropertiesString) {
+    if (StringUtils.isEmpty(extraPropertiesString)) {
+      this.extraProperties = null;
+    } else {
+      InputStream is = new ByteArrayInputStream(extraPropertiesString.getBytes());
+      this.extraProperties = new Properties();
+      try {
+        this.extraProperties.load(is);
+      } catch (IOException e) {
+        // Shouldn't ever occur...
+        throw new RuntimeException("Error configuring mail connection.", e);
+      }
+    }
+  }
+
+  /**
+   * Add extraProperties to an external Properties object
+   * 
+   * @param externalProperties
+   * @param overwrite
+   */
+  public void appendExtraPropertiesTo(Properties externalProperties, boolean overwrite) {
+    // sanity check
+    if (externalProperties == null) {
+      throw new IllegalArgumentException("externalProperties can't be null");
+    }
+
+    if (this.extraProperties != null && this.extraProperties.size() > 0) {
+      for (Entry<Object, Object> e : this.extraProperties.entrySet()) {
+        String propName = (String) e.getKey();
+        String propValue = (String) e.getValue();
+        if (overwrite || externalProperties.getProperty(propName) == null) {
+          externalProperties.setProperty(propName, propValue);
         }
+      }
+    }
+  }
 
-        int port = xwiki.getXWikiPreferenceAsInt("smtp_port", 25);
-        setPort(port);
+  @Override
+  public String toString() {
+    StringBuffer buffer = new StringBuffer();
 
-        String from = xwiki.getXWikiPreference("smtp_from");
-        if (!StringUtils.isBlank(from)) {
-            setFrom(from);
-        }
-
-        String smtpServerUsername = xwiki.getXWikiPreference("smtp_server_username");
-        String smtpServerPassword = xwiki.getXWikiPreference("smtp_server_password");
-        if (!StringUtils.isEmpty(smtpServerUsername) && !StringUtils.isEmpty(smtpServerPassword)) {
-            setSmtpUsername(smtpServerUsername);
-            setSmtpPassword(smtpServerPassword);
-        }
-
-        String javaMailExtraProps = xwiki.getXWikiPreference("javamail_extra_props");
-        if (!StringUtils.isEmpty(javaMailExtraProps)) {
-            setExtraProperties(javaMailExtraProps);
-        }
+    if (getHost() != null) {
+      buffer.append("Host [" + getHost() + "]");
     }
 
-    public void setHost(String host)
-    {
-        this.host = host;
+    if (getFrom() != null) {
+      buffer.append(", From [" + getFrom() + "]");
     }
 
-    public String getHost()
-    {
-        return this.host;
+    buffer.append(", Port [" + getPort() + "]");
+
+    if (usesAuthentication()) {
+      buffer.append(", Username [" + getSmtpUsername() + "]");
+      buffer.append(", Password [*****]");
     }
 
-    public void setPort(int port)
-    {
-        this.port = port;
-    }
-
-    public int getPort()
-    {
-        return this.port;
-    }
-
-    public void setFrom(String from)
-    {
-        this.from = from;
-    }
-
-    public String getFrom()
-    {
-        return this.from;
-    }
-
-    public void setSmtpUsername(String smtpUsername)
-    {
-        this.smtpUsername = smtpUsername;
-    }
-
-    public String getSmtpUsername()
-    {
-        return this.smtpUsername;
-    }
-
-    public void setSmtpPassword(String smtpPassword)
-    {
-        this.smtpPassword = smtpPassword;
-    }
-
-    public String getSmtpPassword()
-    {
-        return this.smtpPassword;
-    }
-
-    public boolean usesAuthentication()
-    {
-        return !StringUtils.isEmpty(getSmtpUsername()) && !StringUtils.isEmpty(getSmtpPassword());
-    }
-
-    public void setExtraProperties(String extraPropertiesString)
-    {
-        if (StringUtils.isEmpty(extraPropertiesString)) {
-            this.extraProperties = null;
-        } else {
-            InputStream is = new ByteArrayInputStream(extraPropertiesString.getBytes());
-            this.extraProperties = new Properties();
-            try {
-                this.extraProperties.load(is);
-            } catch (IOException e) {
-                // Shouldn't ever occur...
-                throw new RuntimeException("Error configuring mail connection.", e);
-            }
-        }
-    }
-
-    /**
-     * Add extraProperties to an external Properties object
-     * 
-     * @param externalProperties
-     * @param overwrite
-     */
-    public void appendExtraPropertiesTo(Properties externalProperties, boolean overwrite)
-    {
-        // sanity check
-        if (externalProperties == null) {
-            throw new IllegalArgumentException("externalProperties can't be null");
-        }
-
-        if (this.extraProperties != null && this.extraProperties.size() > 0) {
-            for (Entry<Object, Object> e : this.extraProperties.entrySet()) {
-                String propName = (String) e.getKey();
-                String propValue = (String) e.getValue();
-                if (overwrite || externalProperties.getProperty(propName) == null) {
-                    externalProperties.setProperty(propName, propValue);
-                }
-            }
-        }
-    }
-
-    @Override
-    public String toString()
-    {
-        StringBuffer buffer = new StringBuffer();
-
-        if (getHost() != null) {
-            buffer.append("Host [" + getHost() + "]");
-        }
-
-        if (getFrom() != null) {
-            buffer.append(", From [" + getFrom() + "]");
-        }
-
-        buffer.append(", Port [" + getPort() + "]");
-
-        if (usesAuthentication()) {
-            buffer.append(", Username [" + getSmtpUsername() + "]");
-            buffer.append(", Password [*****]");
-        }
-
-        return buffer.toString();
-    }
+    return buffer.toString();
+  }
 }
