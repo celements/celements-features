@@ -2,11 +2,11 @@ package com.celements.layout.rest;
 
 public class RenderPartialRequest {
 
-  private String contextDocSpace;
-  private String contextDocName;
-  private String layoutSpace;
-  private String startNodeName;
-  private String language;
+  private final String contextDocSpace;
+  private final String contextDocName;
+  private final String layoutSpace;
+  private final String startNodeName;
+  private final String language;
 
   public RenderPartialRequest(String contextDocSpace, String contextDocName, String layoutSpace,
       String startNodeName, String language) {
