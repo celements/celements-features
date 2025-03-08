@@ -8,7 +8,14 @@ import org.xwiki.model.reference.SpaceReference;
 import org.xwiki.model.reference.WikiReference;
 
 import com.celements.model.context.ModelContext;
+import com.celements.scheduler.classdefs.SchedulerJobClass;
 
+/**
+ * @deprecated instead use {@link SchedulerJobClass}
+ * @since 6.5
+ */
+
+@Deprecated(since = "6.5", forRemoval = true)
 @Component
 public class SchedulerClassConfig implements ISchedulerClassConfig {
 

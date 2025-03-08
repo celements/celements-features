@@ -1,0 +1,4 @@
+com.celements.mandatory.CelementsGroups
+com.celements.auth.user.CelementsUser
+com.celements.auth.AuthenticationScriptService
+com.celements.auth.AuthenticationService

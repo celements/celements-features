@@ -369,7 +369,7 @@ public class IndexRebuilder implements LuceneIndexRebuildService {
       // Don't leave any database connections open while sleeping
       // This shouldn't be needed, but we never know what bugs might be there
       getXContext().getWiki().getStore().cleanUp(getXContext());
-      LOGGER.info("pausing for {}s since queue size {} too big", pauseDuration.get(), queueSize);
+      LOGGER.debug("pausing for {}s since queue size {} too big", pauseDuration.get(), queueSize);
       paused.set(Instant.now().plusSeconds(pauseDuration.get()));
     }
   }

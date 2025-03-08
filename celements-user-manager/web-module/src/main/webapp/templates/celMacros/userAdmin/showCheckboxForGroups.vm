@@ -1,0 +1,31 @@
+#set($xwikiAllGroupDocRef = $services.reference.resolveDocRef("XWiki.XWikiAllGroup"))
+#set($groupsDocRefList = $services.group.getAllLocalGroups())
+#set($dev = $groupsDocRefList.remove($xwikiAllGroupDocRef))
+#foreach($groupDocRef in $groupsDocRefList)
+  #set($groupDoc = $services.modelAccess.getDocument($groupDocRef))
+  #set($prettyName = $services.group.getGroupPrettyName($groupDocRef))
+  #set($isMember = $xwiki.getUser($!{services.reference.serialize($doc.documentReference)}).isUserInGroup($groupDocRef.name))
+  #if($isAdmin)
+    #set($objNb = $groupDoc.getObject('XWiki.XWikiGroups', 'member', "$doc").number)
+    #if(!$objNb)
+      #set($objNb = $groupDoc.getObject('XWiki.XWikiGroups', 'member', '').number)
+    #end
+    #if(!$objNb)
+      #set($objNb = -1)
+    #end
+    <div class='checkboxWrapper'>
+      #set($inputName = "$!{services.reference.serialize($groupDocRef, 'local')}_XWiki.XWikiGroups_$!{objNb}_member")
+      #set($idAndLabel = "$!services.reference.serialize($groupDocRef, 'local')")
+      <input id='$!idAndLabel' type='checkbox' value='$!{services.reference.serialize($doc.documentReference)}' name='$!{inputName}' #if($isMember) checked #end>
+      <input type='hidden' value='' name='$!{inputName}'>
+      <label for='$!idAndLabel'>$!prettyName</label>
+    </div>
+  #elseif($isMember)
+    <div class='checkboxWrapper'>
+      <input type='checkbox' value='$!{services.reference.serialize($doc.documentReference)}' #if($isMember) checked #end disabled>
+      <label>$!prettyName</label>
+     </div>
+  #else
+    ##in other cases we do not display the group and the checkbox
+  #end
+#end

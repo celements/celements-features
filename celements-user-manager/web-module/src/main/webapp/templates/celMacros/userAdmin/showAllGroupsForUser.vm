@@ -1,0 +1,17 @@
+#set($userDocRef = $doc.getDocumentReference())
+#set($xwikiAllGroupRefDoc = $services.reference.resolveDocRef("XWiki.XWikiAllGroup"))
+#set($groupDocRefList = $services.rightsAccess.getGroupRefsForUser($userDocRef))
+#set($dev = $groupDocRefList.remove($xwikiAllGroupRefDoc))
+#set($groupNames = '')
+#foreach ($groupDocRef in $groupDocRefList)
+  #if("$groupNames" == '')
+    #set($groupNames = "$!services.group.getGroupPrettyName($groupDocRef)")
+  #else
+    #set($groupNames = "${groupNames} | $!services.group.getGroupPrettyName($groupDocRef)")
+  #end
+#end
+#if("$groupNames" != '')
+  $!groupNames
+#else
+  $adminMsg.get("cel_useradmin_noGroupdata")
+#end

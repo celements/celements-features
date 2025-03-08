@@ -1,0 +1,9 @@
+#if($services.rightsAccess.isLoggedIn())
+#if($isAdmin)
+#set($overwriteLayoutRef = $services.reference.create().space("UserAdmin").build())
+#else
+#set($overwriteRenderDocument = 'celInlineTemplates/accessdenied.vm')
+#end
+#else
+#set($overwriteRenderDocument = 'celInlineTemplates/login.vm')
+#end

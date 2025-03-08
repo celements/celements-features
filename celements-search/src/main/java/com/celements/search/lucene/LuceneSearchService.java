@@ -51,12 +51,12 @@ import com.celements.search.lucene.query.QueryRestrictionGroup;
 import com.celements.search.lucene.query.QueryRestrictionGroup.Type;
 import com.celements.search.lucene.query.QueryRestrictionString;
 import com.google.common.collect.BoundType;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Range;
 import com.xpn.xwiki.XWikiContext;
 import com.xpn.xwiki.doc.XWikiDocument;
 import com.xpn.xwiki.plugin.lucene.IndexFields;
 import com.xpn.xwiki.plugin.lucene.LucenePlugin;
+import com.xpn.xwiki.plugin.lucene.indexExtension.IndexExtensionField;
 
 @Component
 public class LuceneSearchService implements ILuceneSearchService {
@@ -105,7 +105,7 @@ public class LuceneSearchService implements ILuceneSearchService {
   @Override
   public LuceneQuery createQuery() {
     LuceneQuery query = new LuceneQuery();
-    query.setDocTypes(ImmutableList.of(LuceneDocType.DOC));
+    query.setDocTypes(List.of(LuceneDocType.DOC));
     query.setWiki(context.getWikiRef());
     return query;
   }
@@ -169,21 +169,35 @@ public class LuceneSearchService implements ILuceneSearchService {
 
   @Override
   public QueryRestriction createRestriction(String field, String value) {
-    return createRestriction(field, value, DEFAULT_TOKENIZE, DEFAULT_FUZZY);
+    QueryRestriction restriction = new QueryRestriction(field, value);
+    if (!restriction.getSpecifier().isEmpty() && isAnalyzedOnIndex(restriction)) {
+      getLucenePlugin().map(LucenePlugin::getAnalyzer)
+          .flatMap(a -> tryCast(a, CelAnalyzer.class))
+          .ifPresent(restriction::setAnalyzer);
+    }
+    LOGGER.trace("createRestriction - {}", restriction);
+    return restriction;
+  }
+
+  private boolean isAnalyzedOnIndex(QueryRestriction restriction) {
+    return new IndexExtensionField.Builder(restriction.getSpecifier())
+        .value(restriction.getQuery())
+        .build()
+        .getLuceneField()
+        .isTokenized();
   }
 
   @Override
+  @Deprecated
   public QueryRestriction createRestriction(String field, String value, boolean tokenize) {
-    return createRestriction(field, value, tokenize, DEFAULT_FUZZY);
+    return createRestriction(field, value).setTokenizeQuery(tokenize);
   }
 
   @Override
+  @Deprecated
   public QueryRestriction createRestriction(String field, String value, boolean tokenize,
       boolean fuzzy) {
-    QueryRestriction restriction = new QueryRestriction(field, value, tokenize);
-    getLucenePlugin().map(LucenePlugin::getAnalyzer)
-        .flatMap(a -> tryCast(a, CelAnalyzer.class))
-        .ifPresent(restriction::setAnalyzer);
+    QueryRestriction restriction = createRestriction(field, value, tokenize);
     return fuzzy ? restriction.setFuzzy() : restriction;
   }
 
@@ -390,9 +404,9 @@ public class LuceneSearchService implements ILuceneSearchService {
   @Override
   public QueryRestrictionGroup createAttachmentRestrictionGroup(List<String> mimeTypes,
       List<String> mimeTypesBlackList, List<String> filenamePrefs) {
-    mimeTypes = firstNonNull(mimeTypes, ImmutableList.<String>of());
-    mimeTypesBlackList = firstNonNull(mimeTypesBlackList, ImmutableList.<String>of());
-    filenamePrefs = firstNonNull(filenamePrefs, ImmutableList.<String>of());
+    mimeTypes = firstNonNull(mimeTypes, List.<String>of());
+    mimeTypesBlackList = firstNonNull(mimeTypesBlackList, List.<String>of());
+    filenamePrefs = firstNonNull(filenamePrefs, List.<String>of());
     QueryRestrictionGroup attGrp = createRestrictionGroup(Type.AND);
     attGrp.add(createRestrictionGroup(Type.OR, Arrays.asList(IndexFields.MIMETYPE),
         mimeTypes.stream().map(LuceneUtils::exactify).collect(toList())));

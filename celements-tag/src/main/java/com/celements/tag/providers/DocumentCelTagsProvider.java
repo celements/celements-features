@@ -3,9 +3,8 @@ package com.celements.tag.providers;
 import static com.celements.common.MoreOptional.*;
 import static com.celements.common.lambda.LambdaExceptionUtil.*;
 import static com.celements.navigation.INavigationClassConfig.*;
-import static com.google.common.base.Strings.emptyToNull;
+import static com.google.common.base.Strings.*;
 import static java.util.function.Predicate.*;
-import static org.python.google.common.base.Strings.nullToEmpty;
 
 import java.util.Collection;
 import java.util.List;
@@ -19,6 +18,7 @@ import javax.inject.Inject;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 import org.xwiki.model.reference.ClassReference;
 import org.xwiki.model.reference.DocumentReference;
@@ -61,7 +61,7 @@ public class DocumentCelTagsProvider implements CelTagsProvider {
   @Inject
   public DocumentCelTagsProvider(
       QueryManager queryManager,
-      WikiService wikiService,
+      @Lazy WikiService wikiService,
       IModelAccessFacade modelAccess,
       ModelUtils modelUtils) {
     this.wikiService = wikiService;
@@ -95,21 +95,24 @@ public class DocumentCelTagsProvider implements CelTagsProvider {
 
   private CelTag.Builder asCelTagBuilder(XWikiDocument tagDefDoc) {
     final var tagDefDocRef = tagDefDoc.getDocRef();
+    final var type = getTagType(tagDefDoc);
     var builder = new CelTag.Builder();
     builder.source(tagDefDocRef);
-    builder.type(getTagType(tagDefDoc));
-    builder.name(getSanitisedDocTitle(tagDefDoc).orElseGet(tagDefDocRef::getName));
+    builder.type(type);
+    builder.name(getTagName(tagDefDoc));
     if (!CelConstant.CENTRAL_WIKI.equals(tagDefDoc.getWikiRef())) {
       builder.scope(tagDefDoc.getWikiRef());
     }
     Optional.ofNullable(tagDefDoc.getParentReference())
-        .map(DocumentReference::getName)
+        .map(modelAccess::getOrCreateDocument)
+        .filter(doc -> type.equals(getTagType(doc)))
+        .map(this::getTagName)
         .ifPresent(builder::parent);
     XWikiObjectFetcher.on(tagDefDoc)
         .fetchField(CelTagDependencyClass.FIELD_REFERENCE)
         .stream()
-        .map(DocumentReference::getName)
-        .forEach(builder::expectDependency);
+        .map(modelAccess::getOrCreateDocument)
+        .forEach(doc -> builder.expectDependency(getTagType(doc), getTagName(doc)));
     builder.prettyName(lang -> getPrettyName(tagDefDocRef, lang));
     builder.order(getMenuItemOrder(tagDefDoc));
     return builder;
@@ -125,6 +128,10 @@ public class DocumentCelTagsProvider implements CelTagsProvider {
         .build(DocumentReference.class))
         .flatMap(this::getSanitisedDocTitle)
         .orElse(tagSpaceRef.getName());
+  }
+
+  private String getTagName(XWikiDocument doc) {
+    return getSanitisedDocTitle(doc).orElse(doc.getDocRef().getName());
   }
 
   private Optional<String> getSanitisedDocTitle(XWikiDocument doc) {

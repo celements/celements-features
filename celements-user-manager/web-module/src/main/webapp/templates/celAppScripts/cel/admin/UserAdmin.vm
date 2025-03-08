@@ -1,0 +1,5 @@
+#if($isAdmin)
+<!-- UserAdmin already rendered with layout -->
+#else
+<p>You have no access rights for this page.</p>
+#end

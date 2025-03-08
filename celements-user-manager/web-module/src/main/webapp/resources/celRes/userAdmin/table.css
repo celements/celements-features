@@ -1,0 +1,117 @@
+@charset "UTF-8";
+#searchoutput .struct_table {
+  display: flex;
+  flex-flow: column;
+  gap: 3px;
+  min-width: 930px;
+}
+#searchoutput .struct_table ul.struct_table_header, 
+#searchoutput .struct_table ul.struct_table_data {
+  list-style-type: none;
+}
+#searchoutput .struct_table ul.struct_table_header {
+  padding: 0px 0px;
+  margin: 0px 0px;
+  font-weight: bold;
+  text-transform: uppercase;
+}
+#searchoutput .struct_table ul.struct_table_data {
+  display: flex;
+  flex-flow: column;
+  padding: 0px 0px;
+  margin: 0px 0px;
+  gap: 1px;
+}
+#searchoutput .struct_table ul.struct_table_data li.struct_table_row:nth-child(odd){
+  background-color: var(--background-color);
+}
+#searchoutput .struct_table ul li.struct_table_row {
+  display: flex;
+  flex-flow: row wrap;
+  align-items: flex-start;
+  padding: 3px 0px;
+  gap: 0px 3px;
+}
+#searchoutput .struct_table ul.struct_table_data li.struct_table_row:hover,
+#searchoutput .struct_table ul.struct_table_data li.struct_table_row.open {
+  background-color: var(--lightgrey-color);
+}
+#searchoutput .struct_table .column_arrow {
+  flex: 0 0 20px;
+  text-align: center;
+}
+#searchoutput .struct_table li.struct_table_row .column_arrow {
+  transition: transform 0.5s linear;
+  transform: rotate(0deg);
+  content: "\f0da";
+ }
+#searchoutput .struct_table li.struct_table_row .column_arrow:hover {
+  cursor: pointer;
+  color: var(--accent-color);
+}
+#searchoutput .struct_table li.struct_table_row.open .column_arrow {
+  transition: transform 0.5s linear;
+  transform: rotate(90deg);
+}
+#searchoutput .struct_table .column_active {
+  flex: 0 0 25px;
+  text-align: center;
+}
+#searchoutput .struct_table .column_active .fa-user-slash {
+  color: red;
+}
+#searchoutput .struct_table .column_name {
+  flex: 1 0 150px;
+}
+#searchoutput .struct_table .column_firstname{
+  flex: 1 0 100px;
+}
+#searchoutput .struct_table .column_email{
+  flex: 1 0 350px;
+}
+#searchoutput .struct_table .column_company {
+  flex: 1 0 150px;
+}
+#searchoutput .struct_table .column_language {
+  flex: 1 0 30px;
+}
+#searchoutput .struct_table .column_edit, 
+#searchoutput .struct_table .column_delete,
+#searchoutput .struct_table .column_sendMail {
+  flex: 0 0 25px;
+  text-align: center;
+}
+#searchoutput .struct_table .column_edit a.icon-link, 
+#searchoutput .struct_table .column_delete a.icon-link,
+#searchoutput .struct_table .column_sendMail a.icon-link {
+  text-decoration: none;
+  color: black;
+}
+#searchoutput .struct_table .column_edit a.icon-link:hover, 
+#searchoutput .struct_table .column_delete a.icon-link:hover,
+#searchoutput .struct_table .column_sendMail a.icon-link:hover {
+  color: var(--accent-color);
+}
+#searchoutput .struct_table ul li.struct_table_row .editContentRTE {
+	display: flex;
+  flex-flow: column;
+  max-height: 0;
+  padding: 0 0px;
+  margin-left: 40px;
+  transition: max-height 0.3s ease-out;
+  overflow: hidden;
+  width: 100%;
+}
+#searchoutput .struct_table ul li.struct_table_row.open .editContentRTE {
+  margin-left: 22px;
+  margin-right: 84px;
+  margin-bottom: 2px;
+  margin-top: 4px;
+  max-height: 1000px;
+  transition: max-height 0.8s ease-in;
+  border-top: 1px solid var(--accent-color);
+  padding: 3px 15px;
+}
+#searchoutput .struct_table ul li.struct_table_row .editContentRTE .groupLabel {
+  text-transform: uppercase;
+}

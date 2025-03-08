@@ -40,6 +40,8 @@ public class IndexFields {
 
   private IndexFields() {}
 
+  public static final String SUFFIX_SORT = "_s";
+
   /**
    * Keyword field, holds a string uniquely identifying a document across the index. this
    * is used for finding old versions of a document to be indexed.
@@ -55,13 +57,13 @@ public class IndexFields {
    * Title of the document
    */
   public static final String DOCUMENT_TITLE = "title";
-  public static final String DOCUMENT_TITLE_SORT = "title_s";
+  public static final String DOCUMENT_TITLE_SORT = DOCUMENT_TITLE + SUFFIX_SORT;
 
   /**
    * Name of the document
    */
   public static final String DOCUMENT_NAME = "name";
-  public static final String DOCUMENT_NAME_S = "name_s";
+  public static final String DOCUMENT_NAME_S = DOCUMENT_NAME + SUFFIX_SORT;
 
   /**
    * Name of the web the document belongs to
@@ -73,7 +75,7 @@ public class IndexFields {
    * Name of the space the document belongs to
    */
   public static final String DOCUMENT_SPACE = "space";
-  public static final String DOCUMENT_SPACE_S = "space_s";
+  public static final String DOCUMENT_SPACE_S = DOCUMENT_SPACE + SUFFIX_SORT;
 
   /**
    * FullName of the document (example : Main.WebHome)

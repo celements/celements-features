@@ -1,0 +1,171 @@
+@charset "UTF-8";
+
+#userEditForm {
+  display: flex;
+  flex-flow: column;
+  gap: 30px;
+}
+#userEditForm .formWrapper {
+  display: flex;
+  flex-flow: row;
+  gap: 40px;
+}
+@media(max-width: 768px) {
+  #userEditForm .formWrapper {
+    flex-flow: column;
+  }
+}
+#userEditForm .formWrapper .formPartWrapper {
+  width: 100%;
+  display: flex;
+  flex-flow: column;
+  gap: 15px;
+}
+#userEditForm .formWrapper .inputWrapper {
+  display: flex;
+  flex-flow: column;
+  width: 100%;
+  gap: 5px;
+}
+#userEditForm .formWrapper .inputWrapper:has(#emailReadonly.isAdmin) {
+  display: none;
+}
+#userEditForm #actSuspWrapper{
+  display: flex;
+  flex-flow: row;
+  gap: 20px;
+}
+#userEditForm #groups {
+  display: flex;
+  flex-flow: row wrap;
+  padding: 3px 0px 12px;
+}
+#userEditForm #groups .checkboxWrapper {
+  display: flex;
+  flex-flow: row;
+  flex: 0 0 200px;
+  gap: 8px;
+}
+#userEditForm .checkboxWrapper input[type="checkbox"] {
+  appearance: none;
+  position: relative;
+  width: 16px !important;
+  height: 16px;
+  margin: 0px !important;
+  border: 2px solid var(--accent-color);
+  border-radius: 0px;
+  align-self: center;
+}
+#userEditForm .checkboxWrapper input[type="checkbox"]:disabled {
+  border: 2px solid darkgrey;
+}
+#userEditForm .checkboxWrapper input[type="checkbox"]:checked {
+  border: none;
+  background-color: var(--accent-color);
+}
+#userEditForm .checkboxWrapper input[type="checkbox"]:checked:disabled {
+  border: none;
+  background-color: darkgray;
+}
+#userEditForm .checkboxWrapper input[type="checkbox"]:checked::before {
+  font-family: 'FontAwesome';
+  content: "\f00c";
+  display: block;
+  color: white;
+  text-align: center;
+  position: absolute;
+  top: 0px;
+  left: 2px;
+  font-size: 15px;
+  line-height: 16px;
+}
+#userEditForm .formWrapper select {
+  visibility: hidden;
+}
+#userEditForm .formWrapper input[type=text],
+#userEditForm .formWrapper input[type=password],
+#userEditForm .formWrapper .select2UserAdminSelection {
+  padding: 8px 10px;
+  border: none;
+  background-color: var(--background-color);
+  border-radius: 0px;
+  height: 39px;
+  width: 100%;
+}
+#password a {
+  color: var(--accent-color);
+  line-height: 39px;
+}
+#userEditForm .formWrapper input[type=text]:focus,
+#userEditForm .formWrapper input[type=password]:focus,
+#userEditForm .formWrapper .select2UserAdminSelection:focus {
+  outline:none;
+  border-bottom: 2px solid var(--accent-color);
+}
+/* select2 customisings*/
+#userAdminEdit .select2UserAdminSelection {
+  display: flex;
+  width: 100%;
+  position: relative;
+}
+#userEditForm .select2-selection__rendered {
+  padding: 0px;
+  color: black;
+  line-height: 23px;
+}
+#userEditForm .select2-selection__arrow {
+  display: none;
+}
+#userEditForm .select2UserAdminSelection::after {
+  font-family: 'FontAwesome';
+  content: "\f078";
+  position: absolute;
+  right: 15px;
+  top: 8px;
+  line-height: 23px;
+  font-size: 16px;
+}
+body .select2-container .select2UserAdminDropdown {
+  border: 1px solid var(--accent-color);
+  border-radius: 0px;
+}
+body .select2-container .select2UserAdminDropdown .select2-results__option {
+  font-family: var(--font);
+  font-size: 16px;
+  line-height: 23px;
+  padding: 6px 10px;
+}
+body .select2-container .select2UserAdminDropdown .select2-results__option--highlighted[aria-selected] {
+  background-color: var(--accent-color);
+}
+#userEditForm .submitaction, 
+#userEditForm .cancelaction {
+  display: block;
+  text-align: center;
+  text-decoration: none;
+  background-color: var(--accent-color);
+  border: none;
+  padding: 8px 8px;
+  width: 150px;
+}
+#userEditForm #formActionWrapper {
+  display: flex;
+  flex-flow: row wrap;
+  gap: 15px;
+  align-items: center;
+  justify-content: space-evenly;
+}
+#userEditForm .submitaction a, 
+#userEditForm .cancelaction a {
+  display: block;
+  width: 100%;
+  text-decoration: none;
+  color: white;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+#userEditForm .submitaction:hover, 
+#userEditForm .cancelaction:hover {
+  opacity: 80%;
+  cursor: pointer;
+}

@@ -1,7 +1,6 @@
 package com.celements.tag;
 
 import static com.celements.tag.CelTag.*;
-import static com.google.common.base.Strings.*;
 import static java.util.stream.Collectors.*;
 
 import java.util.ArrayList;
@@ -39,12 +38,14 @@ public class CelTagScriptService implements ScriptService {
   }
 
   public List<CelTag> getTags(String type) {
-    return tagService.getTagsByType()
-        .get(nullToEmpty(type).toLowerCase())
-        .stream()
-        .sorted(CMP_ORDER.thenComparing(CMP_NAME.apply(context.getLanguage().orElse(""))))
+    return tagService.streamTags(type)
+        .sorted(CMP_DEFAULT.apply(context.getLanguage().orElse("")))
         .filter(tag -> tag.hasScope(context.getWikiRef()))
         .collect(toList());
+  }
+
+  public CelTag getTag(String type, String name) {
+    return tagService.getTag(type, name).orElse(null);
   }
 
   public List<CelTag> getTags(DocumentReference docRef) {

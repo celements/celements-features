@@ -1,0 +1,33 @@
+#userAdminActionRow {
+  display: flex;
+  flex-direction: row-reverse;
+  margin-bottom: 8px;
+  margin-top: 20px;
+}
+
+#userAdminActionRow .actionButtonLarge {
+  display: flex;
+  height: 40px;
+}
+
+#userAdminActionRow .actionButtonLarge a {
+  align-content: center;
+  text-decoration: none;
+}
+
+#userAdminActionRow .actionButtonLarge a i {
+  width: 30px;
+  height: 30px;
+  align-content: center;
+  text-align: center;
+  border-radius: 20px;
+  border: 2px solid var(--accent-color);
+  color: var(--accent-color);
+  font-size: 20px;
+}
+
+#userAdminActionRow .actionButtonLarge a:hover i {
+  border: none;
+  color: white;
+  background-color: var(--accent-color);
+}

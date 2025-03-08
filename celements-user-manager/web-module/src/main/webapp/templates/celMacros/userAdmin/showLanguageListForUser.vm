@@ -1,0 +1,6 @@
+#set($languageList = $services.celementsweb.getSupportedAdminLanguages())
+#set($currentUser = $doc.getObject('XWiki.XWikiUsers'))
+#set($userAdminLanguage = $currentUser.getProperty('admin_language').getValue())
+#foreach($language in $languageList)
+  <option #if("$userAdminLanguage" == "$language") selected="selected"#end value=$!language>$adminMsg.get("cel_${language}_${language}")</option>
+#end

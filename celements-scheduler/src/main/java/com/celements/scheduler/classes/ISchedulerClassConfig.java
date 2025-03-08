@@ -4,6 +4,14 @@ import org.xwiki.component.annotation.ComponentRole;
 import org.xwiki.model.reference.DocumentReference;
 import org.xwiki.model.reference.WikiReference;
 
+import com.celements.scheduler.classdefs.SchedulerJobClass;
+
+/**
+ * @deprecated instead use {@link SchedulerJobClass}
+ * @since 6.5
+ */
+
+@Deprecated(since = "6.5", forRemoval = true)
 @ComponentRole
 public interface ISchedulerClassConfig {
 

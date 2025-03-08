@@ -40,16 +40,16 @@ public interface ILuceneSearchService {
    * @deprecated NOT THREAD SAFE! instead use {@link #getDateFormatter()}
    */
   @Deprecated
-  public static final DateFormat SDF = new SimpleDateFormat("yyyyMMddHHmm");
-  public static final String DATE_LOW = IndexFields.DATE_LOW;
-  public static final String DATE_HIGH = IndexFields.DATE_HIGH;
+  DateFormat SDF = new SimpleDateFormat("yyyyMMddHHmm");
+  String DATE_LOW = IndexFields.DATE_LOW;
+  String DATE_HIGH = IndexFields.DATE_HIGH;
 
-  public Version getVersion();
+  Version getVersion();
 
   /**
    * @return LuceneQuery object for current wiki with {@link LuceneDocType#DOC} only
    */
-  public LuceneQuery createQuery();
+  LuceneQuery createQuery();
 
   /**
    * @deprecated instead use {@link #createQuery()} with
@@ -58,175 +58,183 @@ public interface ILuceneSearchService {
    *          e.g. 'wikipage' or 'attachment'
    */
   @Deprecated
-  public LuceneQuery createQuery(List<String> types);
+  LuceneQuery createQuery(List<String> types);
 
   /**
    * @deprecated since 4.3 instead use {@link #getDateFormatter()}
    */
   @Deprecated
-  public DateFormat getSDF();
+  DateFormat getSDF();
 
-  public DateTimeFormatter getDateFormatter();
+  DateTimeFormatter getDateFormatter();
 
-  public QueryRestrictionGroup createRestrictionGroup(Type type);
+  QueryRestrictionGroup createRestrictionGroup(Type type);
 
-  public QueryRestrictionGroup createRestrictionGroup(Type type, List<String> fields,
+  QueryRestrictionGroup createRestrictionGroup(Type type, List<String> fields,
       List<String> values);
 
-  public QueryRestrictionGroup createRestrictionGroup(Type type, List<String> fields,
+  QueryRestrictionGroup createRestrictionGroup(Type type, List<String> fields,
       List<String> values, boolean tokenize, boolean fuzzy);
 
-  public QueryRestrictionString createRestriction(String query) throws ParseException;
+  QueryRestrictionString createRestriction(String query) throws ParseException;
 
-  public QueryRestriction createRestriction(String field, String value);
+  QueryRestriction createRestriction(String field, String value);
 
-  public QueryRestriction createRestriction(String field, String value, boolean tokenize);
+  /**
+   * @deprecated since 6.0 instead use {@link QueryRestriction#setMode()}
+   */
+  @Deprecated
+  QueryRestriction createRestriction(String field, String value, boolean tokenize);
 
-  public QueryRestriction createRestriction(String field, String value, boolean tokenize,
+  /**
+   * @deprecated since 6.0 instead use {@link QueryRestriction#setFuzzy()}
+   */
+  @Deprecated
+  QueryRestriction createRestriction(String field, String value, boolean tokenize,
       boolean fuzzy);
 
-  public QueryRestriction createDocTypeRestriction(LuceneDocType docType);
+  QueryRestriction createDocTypeRestriction(LuceneDocType docType);
 
-  public QueryRestriction createSpaceRestriction(SpaceReference spaceRef);
+  QueryRestriction createSpaceRestriction(SpaceReference spaceRef);
 
-  public QueryRestriction createDocRestriction(DocumentReference docRef);
+  QueryRestriction createDocRestriction(DocumentReference docRef);
 
   /**
    * @deprecated instead use {@link #createObjectRestriction(ClassReference)}
    */
   @Deprecated
-  public QueryRestriction createObjectRestriction(DocumentReference classRef);
+  QueryRestriction createObjectRestriction(DocumentReference classRef);
 
-  public QueryRestriction createObjectRestriction(ClassReference classRef);
+  QueryRestriction createObjectRestriction(ClassReference classRef);
 
   /**
    * @deprecated instead use {@link #createRestriction(ClassField, Object)}
    */
   @Deprecated
-  public QueryRestriction createFieldRestriction(DocumentReference classRef, String field,
+  QueryRestriction createFieldRestriction(DocumentReference classRef, String field,
       String value);
 
-  public <T> QueryRestriction createRestriction(ClassField<T> field, T value);
+  <T> QueryRestriction createRestriction(ClassField<T> field, T value);
 
   /**
    * @deprecated instead use {@link #createRestriction(ClassField, Object, boolean)}
    */
   @Deprecated
-  public QueryRestriction createFieldRestriction(DocumentReference classRef, String field,
+  QueryRestriction createFieldRestriction(DocumentReference classRef, String field,
       String value, boolean tokenize);
 
-  public <T> QueryRestriction createRestriction(ClassField<T> field, T value, boolean tokenize);
+  <T> QueryRestriction createRestriction(ClassField<T> field, T value, boolean tokenize);
 
   /**
    * @deprecated instead use {@link #createRestriction(ClassField, Object)} with a
    *             {@link ReferenceField}
    */
   @Deprecated
-  public IQueryRestriction createFieldRefRestriction(DocumentReference classRef, String field,
+  IQueryRestriction createFieldRefRestriction(DocumentReference classRef, String field,
       EntityReference ref);
 
   /**
    * @deprecated since 6.0 instead use {@link #createRangeRestriction(String, Range)}
    */
   @Deprecated
-  public QueryRestriction createRangeRestriction(String field, String from, String to);
+  QueryRestriction createRangeRestriction(String field, String from, String to);
 
   /**
    * @deprecated since 6.0 instead use {@link #createRangeRestriction(String, Range)}
    */
   @Deprecated
-  public QueryRestriction createRangeRestriction(String field, String from, String to,
+  QueryRestriction createRangeRestriction(String field, String from, String to,
       boolean inclusive);
 
   @NotNull
-  public QueryRestriction createRangeRestriction(@Nullable String field,
+  QueryRestriction createRangeRestriction(@Nullable String field,
       @NotNull Range<String> range);
 
   /**
    * @deprecated since 6.0 instead use {@link #createDateRestriction(String, LocalDateTime)}
    */
   @Deprecated
-  public QueryRestriction createDateRestriction(String field, Date date);
+  QueryRestriction createDateRestriction(String field, Date date);
 
   @NotNull
-  public QueryRestriction createDateRestriction(@Nullable String field,
+  QueryRestriction createDateRestriction(@Nullable String field,
       @NotNull LocalDateTime date);
 
   /**
    * @deprecated since 6.0 instead use {@link #createDateRangeRestriction(String, Range)}
    */
   @Deprecated
-  public QueryRestriction createFromDateRestriction(String field, Date fromDate, boolean inclusive);
+  QueryRestriction createFromDateRestriction(String field, Date fromDate, boolean inclusive);
 
   /**
    * @deprecated since 6.0 instead use {@link #createDateRangeRestriction(String, Range)}
    */
   @Deprecated
-  public QueryRestriction createToDateRestriction(String field, Date toDate, boolean inclusive);
+  QueryRestriction createToDateRestriction(String field, Date toDate, boolean inclusive);
 
   /**
    * @deprecated since 6.0 instead use {@link #createDateRangeRestriction(String, Range)}
    */
   @Deprecated
-  public QueryRestriction createFromToDateRestriction(String field, Date fromDate, Date toDate,
+  QueryRestriction createFromToDateRestriction(String field, Date fromDate, Date toDate,
       boolean inclusive);
 
   @NotNull
-  public QueryRestriction createDateRangeRestriction(@Nullable String field,
+  QueryRestriction createDateRangeRestriction(@Nullable String field,
       @NotNull Range<LocalDateTime> range);
 
   @NotNull
-  public QueryRestrictionGroup createDateRangeRestriction(
+  QueryRestrictionGroup createDateRangeRestriction(
       @Nullable String startField, @Nullable String endField,
       @NotNull Range<LocalDateTime> range);
 
-  public QueryRestriction createNumberRestriction(String field, Number number);
+  QueryRestriction createNumberRestriction(String field, Number number);
 
   /**
    * @deprecated since 6.0 instead use {@link #createNumberRangeRestriction(String, Range)}
    */
   @Deprecated
-  public QueryRestriction createFromToNumberRestriction(String field, Number fromNumber,
+  QueryRestriction createFromToNumberRestriction(String field, Number fromNumber,
       Number toNumber, boolean inclusive);
 
   @NotNull
-  public QueryRestriction createNumberRangeRestriction(@Nullable String field,
+  QueryRestriction createNumberRangeRestriction(@Nullable String field,
       @NotNull Range<? extends Number> range);
 
-  public QueryRestrictionGroup createAttachmentRestrictionGroup(List<String> mimeTypes,
+  QueryRestrictionGroup createAttachmentRestrictionGroup(List<String> mimeTypes,
       List<String> mimeTypesBlackList, List<String> filenamePrefs);
 
-  public LuceneSearchResult search(LuceneQuery query);
+  LuceneSearchResult search(LuceneQuery query);
 
-  public LuceneSearchResult search(LuceneQuery query, List<String> sortFields,
+  LuceneSearchResult search(LuceneQuery query, List<String> sortFields,
       List<String> languages);
 
-  public LuceneSearchResult searchWithoutChecks(LuceneQuery query);
+  LuceneSearchResult searchWithoutChecks(LuceneQuery query);
 
-  public LuceneSearchResult searchWithoutChecks(LuceneQuery query, List<String> sortFields,
+  LuceneSearchResult searchWithoutChecks(LuceneQuery query, List<String> sortFields,
       List<String> languages);
 
-  public LuceneSearchResult search(String queryString, List<String> sortFields,
+  LuceneSearchResult search(String queryString, List<String> sortFields,
       List<String> languages);
 
-  public LuceneSearchResult searchWithoutChecks(String queryString, List<String> sortFields,
+  LuceneSearchResult searchWithoutChecks(String queryString, List<String> sortFields,
       List<String> languages);
 
-  public int getResultLimit();
+  int getResultLimit();
 
-  public int getResultLimit(boolean skipChecks);
+  int getResultLimit(boolean skipChecks);
 
   /**
    * @deprecated instead use {@link ILuceneIndexService}
    */
   @Deprecated
-  public void queueForIndexing(DocumentReference docRef) throws DocumentLoadException,
+  void queueForIndexing(DocumentReference docRef) throws DocumentLoadException,
       DocumentNotExistsException;
 
   /**
    * @deprecated instead use {@link ILuceneIndexService}
    */
   @Deprecated
-  public void queueForIndexing(XWikiDocument doc);
+  void queueForIndexing(XWikiDocument doc);
 
 }

@@ -1,7 +1,9 @@
 package com.celements.tag.lucene;
 
 import java.util.Collection;
+import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import javax.inject.Inject;
 
@@ -20,7 +22,8 @@ import com.xpn.xwiki.plugin.lucene.indexExtension.IndexExtensionField.ExtensionT
 @Component
 public class CelTagIndexExtender implements ILuceneIndexExtender {
 
-  public static final String INDEX_FIELD = "celtags";
+  private static final String PREFIX = "celtags";
+  public static final Function<CelTag, String> INDEX_FIELD = t -> PREFIX + "_" + t.getType();
 
   private final CelTagService tagService;
   private final IModelAccessFacade modelAccess;
@@ -33,7 +36,7 @@ public class CelTagIndexExtender implements ILuceneIndexExtender {
 
   @Override
   public String getName() {
-    return INDEX_FIELD;
+    return PREFIX;
   }
 
   @Override
@@ -45,14 +48,17 @@ public class CelTagIndexExtender implements ILuceneIndexExtender {
   public Collection<IndexExtensionField> getExtensionFields(AbstractIndexData data) {
     DocumentData docData = (DocumentData) data;
     XWikiDocument doc = modelAccess.getOrCreateDocument(docData.getDocumentReference());
-    return tagService.getDocTags(doc)
-        .flatMap(CelTag::getThisAndAncestors)
+    return toExtensionFields(tagService.getDocTags(doc))
+        .collect(Collectors.toList());
+  }
+
+  public Stream<IndexExtensionField> toExtensionFields(Stream<CelTag> tags) {
+    return tags.flatMap(CelTag::getThisAndAncestors)
         .distinct()
-        .map(tag -> new IndexExtensionField.Builder(INDEX_FIELD + "_" + tag.getType())
+        .map(tag -> new IndexExtensionField.Builder(INDEX_FIELD.apply(tag))
             .extensionType(ExtensionType.ADD)
             .value(tag.getName())
-            .build())
-        .collect(Collectors.toList());
+            .build());
   }
 
 }

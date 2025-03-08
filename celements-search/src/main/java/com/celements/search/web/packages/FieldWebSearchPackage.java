@@ -1,13 +1,11 @@
 package com.celements.search.web.packages;
 
-import static com.celements.search.lucene.LuceneUtils.*;
+import static com.celements.search.lucene.query.QueryRestriction.QueryMode.*;
 import static com.celements.search.web.classes.WebSearchFieldConfigClass.*;
 import static java.util.stream.Collectors.*;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.stream.Stream;
 
 import javax.annotation.concurrent.ThreadSafe;
@@ -26,10 +24,10 @@ import com.celements.model.object.xwiki.XWikiObjectFetcher;
 import com.celements.search.lucene.ILuceneSearchService;
 import com.celements.search.lucene.query.IQueryRestriction;
 import com.celements.search.lucene.query.LuceneDocType;
+import com.celements.search.lucene.query.QueryRestriction.QueryMode;
 import com.celements.search.lucene.query.QueryRestrictionGroup;
 import com.celements.search.lucene.query.QueryRestrictionGroup.Type;
 import com.celements.search.web.classes.WebSearchFieldConfigClass;
-import com.celements.search.web.classes.WebSearchFieldConfigClass.SearchMode;
 import com.celements.velocity.VelocityService;
 import com.xpn.xwiki.doc.XWikiDocument;
 import com.xpn.xwiki.objects.BaseObject;
@@ -96,21 +94,16 @@ public class FieldWebSearchPackage implements WebSearchPackage {
         .map(this::evaluateVelocityText).orElse(searchTerm);
     float boost = xFieldAccess.get(obj, FIELD_BOOST).orElse(1f);
     return createRestrictionGroup(Type.OR, xFieldAccess.get(obj, FIELD_SEARCH_MODE)
-        .orElseGet(() -> Arrays.asList(SearchMode.values()))
+        .orElseGet(() -> List.of(TOKENIZED, EXACT))
         .stream()
         .map(mode -> createRestriction(mode, field, value, boost)));
   }
 
-  private IQueryRestriction createRestriction(SearchMode mode,
+  private IQueryRestriction createRestriction(QueryMode mode,
       String field, String value, float boost) {
-    switch (mode) {
-      case TOKENIZED:
-        return searchService.createRestriction(field, value, true).setBoost(boost);
-      case EXACT:
-        return searchService.createRestriction(field, exactify(value), false).setBoost(boost * 2);
-      default:
-        throw new IllegalArgumentException(Objects.toString(mode));
-    }
+    return searchService.createRestriction(field, value)
+        .setMode(mode)
+        .setBoost(boost * (mode == EXACT ? 2 : 1));
   }
 
   private String evaluateVelocityText(String text) {

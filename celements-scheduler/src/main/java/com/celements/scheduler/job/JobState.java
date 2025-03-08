@@ -21,6 +21,8 @@ package com.celements.scheduler.job;
 
 import org.quartz.Trigger;
 
+import com.celements.scheduler.classdefs.SchedulerJobClass;
+
 /**
  * Wrapper around the Quartz trigger's inner state of a Scheduler Job. This class allows to query
  * the actual status of a
@@ -28,6 +30,11 @@ import org.quartz.Trigger;
  *
  * @version $Id$
  */
+/**
+ * @deprecated instead use {@link SchedulerJobClass.Status}
+ * @since 6.5
+ */
+@Deprecated(since = "6.5", forRemoval = true)
 public class JobState {
 
   private int state;

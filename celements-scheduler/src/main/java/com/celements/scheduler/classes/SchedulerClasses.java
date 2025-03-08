@@ -6,11 +6,18 @@ import org.springframework.stereotype.Component;
 import org.xwiki.model.reference.DocumentReference;
 
 import com.celements.common.classes.AbstractClassCollection;
+import com.celements.scheduler.classdefs.SchedulerJobClass;
 import com.xpn.xwiki.XWikiException;
 import com.xpn.xwiki.doc.XWikiDocument;
 import com.xpn.xwiki.objects.classes.BaseClass;
 import com.xpn.xwiki.objects.classes.TextAreaClass;
 
+/**
+ * @deprecated instead use {@link SchedulerJobClass}
+ * @since 6.5
+ */
+
+@Deprecated(since = "6.5", forRemoval = true)
 @Component("SchedulerClasses")
 public class SchedulerClasses extends AbstractClassCollection {
 
@@ -29,7 +36,7 @@ public class SchedulerClasses extends AbstractClassCollection {
 
   @Override
   protected void initClasses() throws XWikiException {
-    getSchedulerJobClass();
+    // getSchedulerJobClass();
   }
 
   private BaseClass getSchedulerJobClass() throws XWikiException {

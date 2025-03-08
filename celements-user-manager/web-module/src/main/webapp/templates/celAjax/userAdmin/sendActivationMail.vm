@@ -1,0 +1,25 @@
+#if($isAdmin)
+  #set($userDocRef = $services.reference.resolveDocRef($!request.get("user")))
+  #set($userExists = $services.modelAccess.exists($userDocRef))
+  #if($userExists)
+    #set($user_obj = $services.modelAccess.getObject($userDocRef, $services.reference.create().space('XWiki').doc('XWikiUsers').build()))
+    #set($emailAddress = "$!user_obj.getProperty('email').getValue()")
+    #set($successful = $services.authentication.sendNewValidation("$!emailAddress", "email"))
+    #if($successful)
+      #set($message = $adminMsg.get('cel_useradmin_send_new_validation_confirm', ["$!emailAddress"])) 
+    #else
+      #set($message = $adminMsg.get('cel_useradmin_send_new_validation_failed', ["$!emailAddress"]))
+    #end
+  #else
+    #set($message = $userExists)
+  #end
+#else
+  #set($message = $adminMsg.get('cel_useradmin_send_validation_no_rights'))
+#end
+
+#set($jsonBuilder = $services.json.newBuilder())
+$jsonBuilder.openDictionary()
+$jsonBuilder.addProperty("successful", $successful)
+$jsonBuilder.addProperty("message", $message)
+$jsonBuilder.closeDictionary()
+$jsonBuilder.getJSON()

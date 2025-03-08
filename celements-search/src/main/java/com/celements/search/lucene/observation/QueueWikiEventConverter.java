@@ -16,7 +16,6 @@ import org.xwiki.observation.event.Event;
 
 import com.celements.model.reference.RefBuilder;
 import com.celements.search.lucene.index.queue.IndexQueuePriority;
-import com.google.common.collect.ImmutableList;
 
 @Component(QueueWikiEventConverter.NAME)
 public class QueueWikiEventConverter extends AbstractQueueEventConverter<Object> {
@@ -30,7 +29,7 @@ public class QueueWikiEventConverter extends AbstractQueueEventConverter<Object>
 
   @Override
   public List<Event> getEvents() {
-    return ImmutableList.of(
+    return List.of(
         new WikiCreatedEvent(),
         new WikiDeletedEvent());
   }

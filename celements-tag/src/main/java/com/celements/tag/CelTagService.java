@@ -1,6 +1,7 @@
 package com.celements.tag;
 
 import static com.celements.common.lambda.LambdaExceptionUtil.*;
+import static com.google.common.base.Strings.*;
 import static java.util.stream.Collectors.*;
 
 import java.util.ArrayList;
@@ -64,8 +65,13 @@ public class CelTagService implements ApplicationListener<CelTagService.RefreshE
   }
 
   @NotNull
-  public Stream<CelTag> streamAllTags() {
-    return getTagsByType().values().stream();
+  public StreamEx<CelTag> streamTags(@Nullable String type) {
+    return StreamEx.of(getTagsByType().get(nullToEmpty(type).toLowerCase()));
+  }
+
+  @NotNull
+  public StreamEx<CelTag> streamAllTags() {
+    return StreamEx.of(getTagsByType().values());
   }
 
   @NotNull
@@ -138,13 +144,22 @@ public class CelTagService implements ApplicationListener<CelTagService.RefreshE
   }
 
   @NotNull
-  public Stream<CelTag> getDocTags(@NotNull XWikiDocument doc) {
-    return XWikiObjectFetcher.on(doc)
-        .filter(CelTagClass.CLASS_REF).stream()
-        .flatMap(obj -> getTags(
-            fieldAccessor.get(obj, CelTagClass.FIELD_TYPE),
-            fieldAccessor.get(obj, CelTagClass.FIELD_TAGS)
-                .map(Set::copyOf).orElse(Set.of())));
+  public StreamEx<CelTag> getDocTags(@NotNull XWikiDocument doc) {
+    return getDocTags(doc, null);
+  }
+
+  @NotNull
+  public StreamEx<CelTag> getDocTags(@NotNull XWikiDocument doc, @Nullable String type) {
+    XWikiObjectFetcher fetcher = XWikiObjectFetcher.on(doc)
+        .filter(CelTagClass.CLASS_REF);
+    type = nullToEmpty(type).trim();
+    if (!type.isEmpty()) {
+      fetcher = fetcher.filter(CelTagClass.FIELD_TYPE, type);
+    }
+    return StreamEx.of(fetcher.stream()).flatMap(obj -> getTags(
+        fieldAccessor.get(obj, CelTagClass.FIELD_TYPE),
+        fieldAccessor.get(obj, CelTagClass.FIELD_TAGS)
+            .map(Set::copyOf).orElse(Set.of())));
   }
 
   private Stream<CelTag> getTags(Optional<String> type, Set<String> tags) {

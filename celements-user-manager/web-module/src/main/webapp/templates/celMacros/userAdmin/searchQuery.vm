@@ -1,0 +1,1 @@
+wiki:$!{context.database} AND type:wikipage AND Celements2.PageType.page_type:User AND space:XWiki

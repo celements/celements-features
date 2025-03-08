@@ -1,0 +1,9 @@
+#set($currentUser = $doc.getObject('XWiki.XWikiUsers'))
+#set($active = $currentUser.getProperty('active').value == 1)
+#set($suspended = $currentUser.getProperty('suspended').value == 1)
+
+#if($active && !$suspended)
+  <i class="fa-solid fa-user"></i>
+#else
+  <i class="fa-solid fa-user-slash"></i>
+#end
