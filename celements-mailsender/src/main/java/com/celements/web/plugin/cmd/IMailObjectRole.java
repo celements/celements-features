@@ -10,28 +10,28 @@ import com.xpn.xwiki.api.Attachment;
 @ComponentRole
 public interface IMailObjectRole {
 
-  public int sendMail();
+  int sendMail();
 
-  public void setOthers(Map<String, String> others);
+  void setOthers(Map<String, String> others);
 
-  public void setAttachments(List<Attachment> attachments);
+  void setAttachments(List<Attachment> attachments);
 
-  public void setTextContent(String textContent);
+  void setTextContent(String textContent);
 
-  public void setHtmlContent(String htmlContent, boolean isLatin1);
+  void setHtmlContent(String htmlContent, boolean isLatin1);
 
-  public CelMailConfiguration getMailConfiguration();
+  CelMailConfiguration getMailConfiguration();
 
-  public void setSubject(String subject);
+  void setSubject(String subject);
 
-  public void setBcc(String bcc);
+  void setBcc(String bcc);
 
-  public void setCc(String cc);
+  void setCc(String cc);
 
-  public void setTo(String to);
+  void setTo(String to);
 
-  public void setReplyTo(String replyTo);
+  void setReplyTo(String replyTo);
 
-  public void setFrom(String from);
+  void setFrom(String from);
 
 }

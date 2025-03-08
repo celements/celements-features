@@ -3,7 +3,7 @@ package com.celements.mailsender;
 import java.util.List;
 import java.util.Map;
 
-import org.xwiki.component.annotation.Component;
+import org.springframework.stereotype.Component;
 
 import com.celements.web.plugin.cmd.IMailObjectRole;
 import com.xpn.xwiki.api.Attachment;
