@@ -46,7 +46,7 @@ public class CelementsTokenService implements TokenService {
       tokenDoc = modelAccess.getDocument(tokenDocRef);
       return addNewTokenToDocument(tokenDoc, minutesValid);
     } catch (DocumentNotExistsException exp) {
-      LOGGER.error("Failed to add noew token to document {}", tokenDocRef, exp);
+      LOGGER.error("Failed to add new token to document {}", tokenDocRef, exp);
     }
     return Optional.empty();
   }
