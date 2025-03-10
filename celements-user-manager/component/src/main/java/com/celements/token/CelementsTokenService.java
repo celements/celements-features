@@ -4,6 +4,8 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.Optional;
 
+import javax.validation.constraints.NotNull;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -40,7 +42,9 @@ public class CelementsTokenService implements TokenService {
   }
 
   @Override
-  public Optional<String> addNewTokenToDocument(DocumentReference tokenDocRef, int minutesValid) {
+  @NotNull
+  public Optional<String> addNewTokenToDocument(@NotNull DocumentReference tokenDocRef,
+      int minutesValid) {
     XWikiDocument tokenDoc;
     try {
       tokenDoc = modelAccess.getDocument(tokenDocRef);
@@ -52,7 +56,8 @@ public class CelementsTokenService implements TokenService {
   }
 
   @Override
-  public Optional<String> addNewTokenToDocument(XWikiDocument tokenDoc, int minutesValid) {
+  @NotNull
+  public Optional<String> addNewTokenToDocument(@NotNull XWikiDocument tokenDoc, int minutesValid) {
     try {
       removeOutdatedTokens(tokenDoc);
       String validkey = createTokenObject(tokenDoc, minutesValid);
@@ -66,7 +71,9 @@ public class CelementsTokenService implements TokenService {
     return Optional.empty();
   }
 
-  private String createTokenObject(XWikiDocument tokenDoc, int minutesValid) throws QueryException {
+  @NotNull
+  private String createTokenObject(@NotNull XWikiDocument tokenDoc, int minutesValid)
+      throws QueryException {
     // XXX doesn't guarantee a unique key regarding tokens
     String validkey = authService.getUniqueValidationKey();
     BaseObject obj = XWikiObjectEditor.on(tokenDoc).filter(getTokenClassRef()).createFirst();
@@ -77,7 +84,7 @@ public class CelementsTokenService implements TokenService {
     return validkey;
   }
 
-  synchronized boolean removeOutdatedTokens(XWikiDocument tokenDoc) {
+  synchronized boolean removeOutdatedTokens(@NotNull XWikiDocument tokenDoc) {
     LOGGER.trace("removeOutdatedTokens - {}", tokenDoc.getDocumentReference());
     boolean changed = false;
     Date now = new Date();
@@ -92,6 +99,7 @@ public class CelementsTokenService implements TokenService {
   }
 
   @Override
+  @NotNull
   public ClassReference getTokenClassRef() {
     return new ClassReference("Classes", "TokenClass");
   }
