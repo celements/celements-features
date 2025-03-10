@@ -20,14 +20,11 @@
 package com.celements.web.token;
 
 import java.security.Principal;
-import java.util.Calendar;
-import java.util.Date;
 
 import javax.validation.constraints.NotNull;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.xwiki.model.reference.ClassReference;
 import org.xwiki.model.reference.DocumentReference;
 import org.xwiki.model.reference.WikiReference;
 import org.xwiki.query.QueryException;
@@ -35,23 +32,20 @@ import org.xwiki.query.QueryException;
 import com.celements.auth.IAuthenticationServiceRole;
 import com.celements.auth.user.UserInstantiationException;
 import com.celements.auth.user.UserService;
-import com.celements.model.access.IModelAccessFacade;
 import com.celements.model.access.exception.DocumentSaveException;
-import com.celements.model.context.ModelContext;
-import com.celements.model.object.xwiki.XWikiObjectEditor;
-import com.celements.model.object.xwiki.XWikiObjectFetcher;
 import com.celements.model.util.ModelUtils;
 import com.celements.model.util.References;
+import com.celements.token.TokenService;
 import com.xpn.xwiki.XWikiContext;
 import com.xpn.xwiki.XWikiException;
 import com.xpn.xwiki.doc.XWikiDocument;
-import com.xpn.xwiki.objects.BaseObject;
 import com.xpn.xwiki.user.api.XWikiRightService;
 import com.xpn.xwiki.web.Utils;
 
 public class NewCelementsTokenForUserCommand {
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(NewCelementsTokenForUserCommand.class);
+  private static final Logger LOGGER = LoggerFactory
+      .getLogger(NewCelementsTokenForUserCommand.class);
 
   /**
    * @deprecated since 3.0 instead use
@@ -123,47 +117,15 @@ public class NewCelementsTokenForUserCommand {
         userDocRef))) {
       userDocRef = getXWikiGuestPlusDocRef(userDocRef.getWikiReference());
     }
-    XWikiDocument userDoc = getUserService().getUser(userDocRef).getDocument();
-    removeOutdatedTokens(userDoc);
-    String validkey = createTokenObject(userDoc, minutesValid);
-    getModelAccess().saveDocument(userDoc);
-    LOGGER.debug("getNewCelementsTokenForUser - sucessfully created token for user [{}]",
-        userDocRef);
-    return validkey;
+    final DocumentReference checkedUserDocRef = userDocRef;
+    XWikiDocument userDoc = getUserService().getUser(checkedUserDocRef).getDocument();
+    return getTokenService().addNewTokenToDocument(userDoc, minutesValid)
+        .orElseThrow(() -> new DocumentSaveException(checkedUserDocRef));
   }
 
   private DocumentReference getXWikiGuestPlusDocRef(WikiReference wikiRef) {
     return References.create(DocumentReference.class, "XWikiGuestPlus",
         getUserService().getUserSpaceRef(wikiRef));
-  }
-
-  synchronized boolean removeOutdatedTokens(XWikiDocument userDoc) {
-    LOGGER.trace("removeOutdatedTokens - {}", userDoc.getDocumentReference());
-    boolean changed = false;
-    Date now = new Date();
-    for (BaseObject obj : XWikiObjectFetcher.on(userDoc).filter(getTokenClassRef()).iter()) {
-      Date validUntil = obj.getDateValue("validuntil");
-      if ((validUntil == null) || validUntil.before(now)) {
-        LOGGER.trace("removeOutdatedTokens - deleting [{}]", obj);
-        changed |= userDoc.removeXObject(obj);
-      }
-    }
-    return changed;
-  }
-
-  private String createTokenObject(XWikiDocument userDoc, int minutesValid) throws QueryException {
-    // XXX doesn't guarantee a unique key regarding tokens
-    String validkey = getAuthService().getUniqueValidationKey();
-    BaseObject obj = XWikiObjectEditor.on(userDoc).filter(getTokenClassRef()).createFirst();
-    obj.set("tokenvalue", validkey, getContext().getXWikiContext());
-    Calendar myCal = Calendar.getInstance();
-    myCal.add(Calendar.MINUTE, minutesValid);
-    obj.setDateValue("validuntil", myCal.getTime());
-    return validkey;
-  }
-
-  ClassReference getTokenClassRef() {
-    return new ClassReference("Classes", "TokenClass");
   }
 
   /**
@@ -217,7 +179,8 @@ public class NewCelementsTokenForUserCommand {
           + context.getRequest().getParameter("j_username"));
       Principal principal = context.getWiki().getAuthService().authenticate(
           context.getRequest().getParameter("j_username"), context.getRequest().getParameter(
-              "j_password"), context);
+              "j_password"),
+          context);
       if (principal != null) {
         LOGGER.info("getNewCelementsTokenForUser: successfully autenthicated "
             + principal.getName());
@@ -236,16 +199,12 @@ public class NewCelementsTokenForUserCommand {
     return Utils.getComponent(UserService.class);
   }
 
-  IModelAccessFacade getModelAccess() {
-    return Utils.getComponent(IModelAccessFacade.class);
-  }
-
   ModelUtils getModelUtils() {
     return Utils.getComponent(ModelUtils.class);
   }
 
-  ModelContext getContext() {
-    return Utils.getComponent(ModelContext.class);
+  TokenService getTokenService() {
+    return Utils.getComponent(TokenService.class);
   }
 
 }
