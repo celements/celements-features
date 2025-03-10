@@ -23,12 +23,9 @@ import static com.celements.common.test.CelementsTestUtils.*;
 import static org.easymock.EasyMock.*;
 import static org.junit.Assert.*;
 
-import java.util.Date;
-
 import org.junit.Before;
 import org.junit.Test;
 import org.xwiki.model.reference.DocumentReference;
-import org.xwiki.query.QueryException;
 
 import com.celements.auth.IAuthenticationServiceRole;
 import com.celements.auth.user.UserInstantiationException;
@@ -38,6 +35,7 @@ import com.celements.model.access.IModelAccessFacade;
 import com.celements.model.access.exception.DocumentNotExistsException;
 import com.celements.model.classes.ClassDefinition;
 import com.celements.model.object.xwiki.XWikiObjectFetcher;
+import com.celements.token.TokenService;
 import com.celements.web.classes.oldcore.XWikiUsersClass;
 import com.xpn.xwiki.doc.XWikiDocument;
 import com.xpn.xwiki.objects.BaseObject;
@@ -67,7 +65,7 @@ public class NewCelementsTokenForUserCommandTest extends AbstractComponentTest {
     addUserObj(userDoc);
     expect(modelAccessMock.getDocument(userDocRef)).andReturn(userDoc);
     expect(authServiceMock.getUniqueValidationKey()).andReturn(token);
-    BaseClass bClass = expectNewBaseObject(cmd.getTokenClassRef().getDocRef(
+    BaseClass bClass = expectNewBaseObject(getTokenService().getTokenClassRef().getDocRef(
         userDocRef.getWikiReference()));
     PasswordClass pwClass = new PasswordClass();
     expect(bClass.get("tokenvalue")).andReturn(pwClass);
@@ -91,7 +89,7 @@ public class NewCelementsTokenForUserCommandTest extends AbstractComponentTest {
         guestPlusDocRef)).once();
     expectLastCall();
     replayDefault();
-    new ExceptionAsserter<UserInstantiationException>(UserInstantiationException.class) {
+    new ExceptionAsserter<>(UserInstantiationException.class) {
 
       @Override
       protected void execute() throws Exception {
@@ -101,76 +99,8 @@ public class NewCelementsTokenForUserCommandTest extends AbstractComponentTest {
     verifyDefault();
   }
 
-  @Test
-  public void test_removeOutdatedTokens_noTokens() throws QueryException {
-    DocumentReference userDocRef = new DocumentReference("db", "XWiki", "User");
-    XWikiDocument userDoc = new XWikiDocument(userDocRef);
-
-    replayDefault();
-    assertFalse(cmd.removeOutdatedTokens(userDoc));
-    verifyDefault();
-    assertFalse(getTokenObjects(userDoc).exists());
-  }
-
-  @Test
-  public void test_removeOutdatedTokens_1new() throws QueryException {
-    DocumentReference userDocRef = new DocumentReference("db", "XWiki", "User");
-    XWikiDocument userDoc = new XWikiDocument(userDocRef);
-    Date afterNow = new Date();
-    afterNow.setTime(afterNow.getTime() + 1000000l);
-    createTokenObject(userDoc, afterNow);
-
-    replayDefault();
-    assertFalse(cmd.removeOutdatedTokens(userDoc));
-    verifyDefault();
-    assertEquals(1, getTokenObjects(userDoc).count());
-  }
-
-  @Test
-  public void test_removeOutdatedTokens_1outdated() throws QueryException {
-    DocumentReference userDocRef = new DocumentReference("db", "XWiki", "User");
-    XWikiDocument userDoc = new XWikiDocument(userDocRef);
-    Date beforeNow = new Date();
-    beforeNow.setTime(beforeNow.getTime() - 1000000l);
-    createTokenObject(userDoc, beforeNow);
-
-    replayDefault();
-    assertTrue(cmd.removeOutdatedTokens(userDoc));
-    verifyDefault();
-    assertFalse(getTokenObjects(userDoc).exists());
-  }
-
-  @Test
-  public void test_removeOutdatedTokens_multiple() throws QueryException {
-    DocumentReference userDocRef = new DocumentReference("db", "XWiki", "User");
-    XWikiDocument userDoc = new XWikiDocument(userDocRef);
-    Date afterNow = new Date();
-    afterNow.setTime(afterNow.getTime() + 1000000l);
-    createTokenObject(userDoc, afterNow);
-    Date beforeNow = new Date();
-    beforeNow.setTime(beforeNow.getTime() - 1000000l);
-    createTokenObject(userDoc, beforeNow);
-    beforeNow.setTime(beforeNow.getTime() - 1000000l);
-    createTokenObject(userDoc, beforeNow);
-
-    replayDefault();
-    assertTrue(cmd.removeOutdatedTokens(userDoc));
-    verifyDefault();
-    assertEquals(1, getTokenObjects(userDoc).count());
-    assertEquals(afterNow, getTokenObjects(userDoc).first().get().getDateValue("validuntil"));
-  }
-
-  private BaseObject createTokenObject(XWikiDocument doc, Date validUntil) {
-    BaseObject obj = new BaseObject();
-    obj.setXClassReference(cmd.getTokenClassRef().getDocRef(
-        doc.getDocumentReference().getWikiReference()));
-    obj.setDateValue("validuntil", validUntil);
-    doc.addXObject(obj);
-    return obj;
-  }
-
   private XWikiObjectFetcher getTokenObjects(XWikiDocument doc) {
-    return XWikiObjectFetcher.on(doc).filter(cmd.getTokenClassRef());
+    return XWikiObjectFetcher.on(doc).filter(getTokenService().getTokenClassRef());
   }
 
   private BaseObject addUserObj(XWikiDocument userDoc) {
@@ -185,6 +115,10 @@ public class NewCelementsTokenForUserCommandTest extends AbstractComponentTest {
 
   private ClassDefinition getUserClass() {
     return Utils.getComponent(ClassDefinition.class, XWikiUsersClass.CLASS_DEF_HINT);
+  }
+
+  private TokenService getTokenService() {
+    return Utils.getComponent(TokenService.class);
   }
 
 }
