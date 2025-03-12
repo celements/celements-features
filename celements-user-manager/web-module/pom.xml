@@ -32,7 +32,7 @@
   <artifactId>celements-user-manager-web</artifactId>
   <packaging>war</packaging>
   <name>User Manager Web-Module</name>
-  <version>6.2</version>
+  <version>6.3-SNAPSHOT</version>
   <description>	</description>
   <licenses>
     <license>
@@ -56,6 +56,6 @@
     <connection>scm:git:git@github.com:celements/celements-features.git</connection>
     <developerConnection>scm:git:git@github.com:celements/celements-features.git</developerConnection>
     <url>https://github.com/celements/celements-features</url>
-    <tag>celements-user-manager-web-6.2</tag>
+    <tag>HEAD</tag>
   </scm>
 </project>
