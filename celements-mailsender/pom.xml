@@ -7,7 +7,7 @@
     <version>6.2</version>
   </parent>
   <artifactId>celements-mailsender</artifactId>
-  <version>6.0</version>
+  <version>6.1-SNAPSHOT</version>
   <name>Celements Mail Sender</name>
   <repositories>
     <repository>
@@ -42,6 +42,6 @@
     <connection>scm:git:git@github.com:celements/celements-features.git</connection>
     <developerConnection>scm:git:git@github.com:celements/celements-features.git</developerConnection>
     <url>https://github.com/celements/celements-features/celements-mailsender</url>
-    <tag>celements-mailsender-6.0</tag>
+    <tag>HEAD</tag>
   </scm>
 </project>
