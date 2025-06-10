@@ -204,19 +204,25 @@ public interface ILuceneSearchService {
   QueryRestrictionGroup createAttachmentRestrictionGroup(List<String> mimeTypes,
       List<String> mimeTypesBlackList, List<String> filenamePrefs);
 
+  @NotNull
   LuceneSearchResult search(LuceneQuery query);
 
+  @NotNull
   LuceneSearchResult search(LuceneQuery query, List<String> sortFields,
       List<String> languages);
 
+  @NotNull
   LuceneSearchResult searchWithoutChecks(LuceneQuery query);
 
+  @NotNull
   LuceneSearchResult searchWithoutChecks(LuceneQuery query, List<String> sortFields,
       List<String> languages);
 
+  @NotNull
   LuceneSearchResult search(String queryString, List<String> sortFields,
       List<String> languages);
 
+  @NotNull
   LuceneSearchResult searchWithoutChecks(String queryString, List<String> sortFields,
       List<String> languages);
 
