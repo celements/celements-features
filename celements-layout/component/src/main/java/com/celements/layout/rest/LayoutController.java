@@ -2,6 +2,7 @@ package com.celements.layout.rest;
 
 import java.util.Objects;
 
+import javax.annotation.security.PermitAll;
 import javax.inject.Inject;
 
 import org.python.google.common.base.Strings;
@@ -32,6 +33,7 @@ import com.xpn.xwiki.doc.XWikiDocument;
 
 @RestController
 @RequestMapping("/v1/layouts")
+@PermitAll
 public class LayoutController {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(LayoutController.class);

@@ -8,6 +8,7 @@ import java.util.Optional;
 import java.util.Set;
 
 import javax.annotation.concurrent.Immutable;
+import javax.annotation.security.PermitAll;
 import javax.inject.Inject;
 
 import org.springframework.http.ResponseEntity;
@@ -26,6 +27,7 @@ import one.util.streamex.StreamEx;
 
 @RestController
 @RequestMapping("/v1/celtags")
+@PermitAll
 public class CelTagController {
 
   private final CelTagService tagService;
