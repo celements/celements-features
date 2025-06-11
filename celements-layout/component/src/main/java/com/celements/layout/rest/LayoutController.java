@@ -28,13 +28,14 @@ import com.celements.model.access.IModelAccessFacade;
 import com.celements.model.context.ModelContext;
 import com.celements.model.reference.RefBuilder;
 import com.celements.pagelayout.LayoutServiceRole;
+import com.celements.spring.security.AuthenticatedBaseController;
 import com.xpn.xwiki.api.Document;
 import com.xpn.xwiki.doc.XWikiDocument;
 
 @RestController
 @RequestMapping("/v1/layouts")
 @PermitAll
-public class LayoutController {
+public class LayoutController extends AuthenticatedBaseController {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(LayoutController.class);
 

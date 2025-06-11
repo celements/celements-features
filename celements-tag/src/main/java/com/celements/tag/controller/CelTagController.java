@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.celements.spring.security.AuthenticatedBaseController;
 import com.celements.tag.CelTag;
 import com.celements.tag.CelTagService;
 import com.celements.web.service.IWebUtilsService;
@@ -28,7 +29,7 @@ import one.util.streamex.StreamEx;
 @RestController
 @RequestMapping("/v1/celtags")
 @PermitAll
-public class CelTagController {
+public class CelTagController extends AuthenticatedBaseController {
 
   private final CelTagService tagService;
   private final IWebUtilsService webUtils;
