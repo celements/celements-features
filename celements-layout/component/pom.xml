@@ -22,6 +22,12 @@
       <version>6.3</version>
       <scope>provided</scope>
     </dependency>
+    <dependency>
+      <groupId>com.celements</groupId>
+      <artifactId>celements-spring-mvc</artifactId>
+      <version>6.2-SNAPSHOT</version>
+      <scope>provided</scope>
+    </dependency>
   </dependencies>
   <scm>
     <connection>scm:git:git@github.com:celements/celements-features.git</connection>
