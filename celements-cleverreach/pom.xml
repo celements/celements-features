@@ -24,28 +24,34 @@
   <parent>
     <groupId>com.celements</groupId>
     <artifactId>celements</artifactId>
-    <version>6.0</version>
+    <version>6.3</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>celements-cleverreach</artifactId>
-  <version>6.1-SNAPSHOT</version>
+  <version>6.2-SNAPSHOT</version>
   <description>Celements connector to Clever Reach API</description>
   <dependencies>
     <dependency>
       <groupId>com.celements</groupId>
       <artifactId>celements-model</artifactId>
-      <version>6.0</version>
+      <version>6.4</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>com.celements</groupId>
       <artifactId>celements-core</artifactId>
-      <version>6.0</version>
+      <version>6.13</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>com.celements</groupId>
       <artifactId>celements-css</artifactId>
+      <version>6.0</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.celements</groupId>
+      <artifactId>celements-mailsender</artifactId>
       <version>6.0</version>
       <scope>provided</scope>
     </dependency>
@@ -56,6 +62,11 @@
     <dependency>
       <groupId>org.glassfish.jersey.inject</groupId>
       <artifactId>jersey-hk2</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>javax.ws.rs</groupId>
+      <artifactId>javax.ws.rs-api</artifactId>
+      <scope>provided</scope>
     </dependency>
     <!-- JTidy Has been picked up at https://github.com/jtidy/jtidy and immediately was reabandoned.
       However their release from Dec 2019 has at least some HTML5 support -->
