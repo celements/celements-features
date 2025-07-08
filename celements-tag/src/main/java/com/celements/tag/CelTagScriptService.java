@@ -5,6 +5,7 @@ import static java.util.stream.Collectors.*;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import javax.inject.Inject;
 
@@ -42,6 +43,12 @@ public class CelTagScriptService implements ScriptService {
         .sorted(CMP_DEFAULT.apply(context.getLanguage().orElse("")))
         .filter(tag -> tag.hasScope(context.getWikiRef()))
         .collect(toList());
+  }
+
+  public List<String> getTagNames(String type) {
+    return getTags(type).stream()
+        .map(CelTag::getName)
+        .collect(Collectors.toList());
   }
 
   public CelTag getTag(String type, String name) {
