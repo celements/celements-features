@@ -57,6 +57,7 @@ import com.celements.web.service.IWebUtilsService;
 import com.celements.web.token.TokenLDAPAuthServiceImpl;
 import com.google.common.base.Splitter;
 import com.google.common.base.Strings;
+import com.xpn.xwiki.XWikiConstant;
 import com.xpn.xwiki.XWikiException;
 import com.xpn.xwiki.doc.XWikiDocument;
 import com.xpn.xwiki.objects.BaseObject;
@@ -268,6 +269,11 @@ public class CelementsUserService implements UserService {
         .values().findAny();
   }
 
+  /**
+   * @deprecated instead use {@link #getUserForLoginField}
+   * @since 6.9
+   */
+  @Deprecated(since = "6.9", forRemoval = true)
   @Override
   public com.google.common.base.Optional<User> getUserForLoginField(String login) {
     return getUserForLoginField(login, getPossibleLoginFields());
@@ -296,6 +302,12 @@ public class CelementsUserService implements UserService {
       List<DocumentReference> userDocRefs = queryExecService.executeAndGetDocRefs(query);
       LOGGER.info("loadUniqueUserForQuery - for login [{}] and possibleLoginFields [{}]: {}", login,
           possibleLoginFields, userDocRefs);
+      if (userDocRefs.isEmpty()) {
+        query.setWiki(XWikiConstant.MAIN_WIKI.getName());
+        userDocRefs = queryExecService.executeAndGetDocRefs(query);
+        LOGGER.info("loadUniqueUserForQuery - MAIN-Wiki for login [{}] and "
+            + "possibleLoginFields [{}]: {}", login, possibleLoginFields, userDocRefs);
+      }
       if (userDocRefs.size() == 1) {
         user = getUser(userDocRefs.get(0));
       } else if (userDocRefs.size() > 1) {
@@ -368,19 +380,21 @@ public class CelementsUserService implements UserService {
   }
 
   @Override
+  public Optional<User> getPossibleUserForLoginField(String login) {
+    return getPossibleUserForLoginField(login, getPossibleLoginFields());
+  }
+
+  @Override
   public Optional<User> getPossibleUserForLoginField(@NotNull String login,
       @Nullable Collection<String> possibleLoginFields) {
     login = Strings.nullToEmpty(login).trim();
     checkArgument(!login.isEmpty());
-    possibleLoginFields = Optional.ofNullable(possibleLoginFields)
-        .map(Collection::stream).orElseGet(Stream::empty)
+    Set<String> selectedLoginFields = Optional.ofNullable(possibleLoginFields)
+        .map(Collection::stream).orElse(Stream.of(DEFAULT_LOGIN_FIELD))
         .filter(new UserClassFieldFilter())
         .collect(toImmutableSet());
-    if (possibleLoginFields.isEmpty()) {
-      possibleLoginFields = Set.of(DEFAULT_LOGIN_FIELD);
-    }
     User user = null;
-    if (possibleLoginFields.contains(DEFAULT_LOGIN_FIELD)) {
+    if (selectedLoginFields.contains(DEFAULT_LOGIN_FIELD)) {
       try {
         user = getUser(resolveUserDocRef(login));
       } catch (UserInstantiationException exc) {
@@ -388,7 +402,7 @@ public class CelementsUserService implements UserService {
       }
     }
     if (user == null) {
-      user = loadUniqueUserForQuery(login, possibleLoginFields);
+      user = loadUniqueUserForQuery(login, selectedLoginFields);
     }
     return Optional.ofNullable(user);
   }
