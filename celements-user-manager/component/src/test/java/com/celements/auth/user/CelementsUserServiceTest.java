@@ -11,6 +11,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -37,7 +38,6 @@ import com.celements.web.classes.oldcore.XWikiRightsClass;
 import com.celements.web.classes.oldcore.XWikiUsersClass;
 import com.celements.web.service.IWebUtilsService;
 import com.google.common.base.Joiner;
-import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableSet;
 import com.xpn.xwiki.XWiki;
 import com.xpn.xwiki.XWikiException;
@@ -148,7 +148,7 @@ public class CelementsUserServiceTest extends AbstractComponentTest {
   public void test_getUserForLoginField_null() throws XWikiException {
     replayDefault();
     assertThrows(IllegalArgumentException.class,
-        () -> service.getUserForLoginField(null, Collections.<String>emptyList()));
+        () -> service.getPossibleUserForLoginField(null, Collections.<String>emptyList()));
     verifyDefault();
   }
 
@@ -156,7 +156,7 @@ public class CelementsUserServiceTest extends AbstractComponentTest {
   public void test_getUserForLoginField_empty() throws XWikiException {
     replayDefault();
     assertThrows(IllegalArgumentException.class,
-        () -> service.getUserForLoginField(" \t", Collections.<String>emptyList()));
+        () -> service.getPossibleUserForLoginField(" \t", Collections.<String>emptyList()));
     verifyDefault();
   }
 
@@ -165,9 +165,10 @@ public class CelementsUserServiceTest extends AbstractComponentTest {
     String login = "mSladek";
     List<String> possibleLoginFields = Arrays.asList("email");
     expectUserQuery(login, possibleLoginFields, Collections.<DocumentReference>emptyList());
+    expectUserQuery(login, possibleLoginFields, Collections.<DocumentReference>emptyList());
 
     replayDefault();
-    Optional<User> user = service.getUserForLoginField(login, possibleLoginFields);
+    Optional<User> user = service.getPossibleUserForLoginField(login, possibleLoginFields);
     verifyDefault();
     assertFalse(user.isPresent());
   }
@@ -179,7 +180,7 @@ public class CelementsUserServiceTest extends AbstractComponentTest {
     addUserObj(doc);
 
     replayDefault();
-    Optional<User> user = service.getUserForLoginField(login, null);
+    Optional<User> user = service.getPossibleUserForLoginField(login, null);
     verifyDefault();
     assertTrue(user.isPresent());
     assertEquals(login, user.get().getDocRef().getName());
@@ -196,7 +197,8 @@ public class CelementsUserServiceTest extends AbstractComponentTest {
         userDocRef));
 
     replayDefault();
-    Optional<User> user = service.getUserForLoginField(login, Collections.<String>emptyList());
+    Optional<User> user = service.getPossibleUserForLoginField(login,
+        Collections.<String>emptyList());
     verifyDefault();
     assertTrue(user.isPresent());
     assertEquals(userDocRef, user.get().getDocRef());
@@ -209,7 +211,8 @@ public class CelementsUserServiceTest extends AbstractComponentTest {
     expectUserQuery(login, possibleLoginFields, Arrays.asList(userDocRef));
 
     replayDefault();
-    Optional<User> user = service.getUserForLoginField(login, possibleLoginFields);
+    Optional<User> user = service.getPossibleUserForLoginField(login,
+        possibleLoginFields);
     verifyDefault();
     assertTrue(user.isPresent());
     assertEquals(userDocRef, user.get().getDocRef());
@@ -221,9 +224,12 @@ public class CelementsUserServiceTest extends AbstractComponentTest {
     List<String> possibleLoginFields = Arrays.asList("email", "validkey");
     expectUserQuery(login, possibleLoginFields, Arrays.asList(service.resolveUserDocRef(login),
         userDocRef));
+    expectUserQuery(login, possibleLoginFields, Arrays.asList(service.resolveUserDocRef(login),
+        userDocRef));
 
     replayDefault();
-    Optional<User> user = service.getUserForLoginField(login, possibleLoginFields);
+    Optional<User> user = service.getPossibleUserForLoginField(login,
+        possibleLoginFields);
     verifyDefault();
     assertFalse(user.isPresent());
   }
@@ -237,9 +243,11 @@ public class CelementsUserServiceTest extends AbstractComponentTest {
         .andReturn(userDoc);
     expectUserQuery(login, Arrays.asList(UserService.DEFAULT_LOGIN_FIELD),
         Collections.<DocumentReference>emptyList());
+    expectUserQuery(login, Arrays.asList(UserService.DEFAULT_LOGIN_FIELD),
+        Collections.<DocumentReference>emptyList());
 
     replayDefault();
-    Optional<User> user = service.getUserForLoginField(login, Arrays.asList("asdf"));
+    Optional<User> user = service.getPossibleUserForLoginField(login, Arrays.asList("asdf"));
     verifyDefault();
     assertFalse(user.isPresent());
   }
