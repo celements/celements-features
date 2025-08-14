@@ -402,13 +402,15 @@ public class CelementsUserService implements UserService {
       try {
         user = getUser(resolveUserDocRef(login));
       } catch (UserInstantiationException exc) {
-        LOGGER.debug("getUserForData - login [{}] is not valid user name", login, exc);
+        LOGGER.debug("login [{}] is not valid user name", login, exc);
       }
     }
     if (user == null) {
       user = loadUniqueUserForQuery(login, selectedLoginFields);
       if ((user == null) && !context.isMainWiki()) {
         user = loadUniqueUserFromWikiForQuery(login, selectedLoginFields, XWikiConstant.MAIN_WIKI);
+        LOGGER.debug("no local user found, main-wiki lookup for login [{}] results in [{}]", login,
+            user);
       }
     }
     return Optional.ofNullable(user);
