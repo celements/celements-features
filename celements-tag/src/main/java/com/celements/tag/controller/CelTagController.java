@@ -11,11 +11,13 @@ import javax.annotation.concurrent.Immutable;
 import javax.inject.Inject;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.celements.spring.security.AuthenticatedBaseController;
 import com.celements.tag.CelTag;
 import com.celements.tag.CelTagService;
 import com.celements.web.service.IWebUtilsService;
@@ -26,7 +28,8 @@ import one.util.streamex.StreamEx;
 
 @RestController
 @RequestMapping("/v1/celtags")
-public class CelTagController {
+@PreAuthorize("permitAll()")
+public class CelTagController extends AuthenticatedBaseController {
 
   private final CelTagService tagService;
   private final IWebUtilsService webUtils;

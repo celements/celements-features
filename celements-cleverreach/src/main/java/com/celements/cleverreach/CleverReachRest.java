@@ -216,7 +216,7 @@ public class CleverReachRest implements CleverReachService {
         LOGGER.trace("new token received [{}]", token);
         return token;
       } else {
-        LOGGER.warn("Unable to receive token. Response [{}]", response);
+        LOGGER.warn("Unable to receive token.\nResponse [{}]\nJSON-Response [{}]", response, jsonResponse);
       }
     } catch (IOException ioe) {
       LOGGER.warn("IOException caught. Unable to connect and receive token. Response [{}].",

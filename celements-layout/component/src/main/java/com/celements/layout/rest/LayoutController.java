@@ -10,6 +10,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -27,12 +28,14 @@ import com.celements.model.access.IModelAccessFacade;
 import com.celements.model.context.ModelContext;
 import com.celements.model.reference.RefBuilder;
 import com.celements.pagelayout.LayoutServiceRole;
+import com.celements.spring.security.AuthenticatedBaseController;
 import com.xpn.xwiki.api.Document;
 import com.xpn.xwiki.doc.XWikiDocument;
 
 @RestController
 @RequestMapping("/v1/layouts")
-public class LayoutController {
+@PreAuthorize("permitAll()")
+public class LayoutController extends AuthenticatedBaseController {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(LayoutController.class);
 
