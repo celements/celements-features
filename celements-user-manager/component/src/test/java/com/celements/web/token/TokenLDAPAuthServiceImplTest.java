@@ -37,7 +37,6 @@ import org.xwiki.model.reference.DocumentReference;
 import com.celements.common.test.AbstractComponentTest;
 import com.celements.model.access.IModelAccessFacade;
 import com.celements.model.classes.ClassDefinition;
-import com.celements.spring.context.SpringContextProvider;
 import com.celements.web.classes.oldcore.XWikiUsersClass;
 import com.xpn.xwiki.XWiki;
 import com.xpn.xwiki.doc.XWikiDocument;
@@ -51,11 +50,6 @@ public class TokenLDAPAuthServiceImplTest extends AbstractComponentTest {
 
   private TokenLDAPAuthServiceImpl tokenAuthImpl;
   private XWikiStoreInterface store;
-
-  @Before
-  public final void setUpApplicationContext() {
-    getBeanFactory().getBean(SpringContextProvider.class).setApplicationContext(getSpringContext());
-  }
 
   @Before
   public void prepare() throws Exception {
