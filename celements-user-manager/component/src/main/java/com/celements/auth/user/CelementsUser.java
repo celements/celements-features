@@ -11,7 +11,6 @@ import org.xwiki.component.annotation.Component;
 import org.xwiki.component.annotation.InstantiationStrategy;
 import org.xwiki.component.descriptor.ComponentInstantiationStrategy;
 import org.xwiki.model.reference.DocumentReference;
-import org.xwiki.model.reference.EntityReferenceSerializer;
 
 import com.celements.model.access.IModelAccessFacade;
 import com.celements.model.access.exception.DocumentNotExistsException;
@@ -19,6 +18,7 @@ import com.celements.model.classes.ClassDefinition;
 import com.celements.model.classes.fields.ClassField;
 import com.celements.model.object.xwiki.XWikiObjectFetcher;
 import com.celements.model.util.ModelUtils;
+import com.celements.model.util.ReferenceSerializationMode;
 import com.celements.web.classes.oldcore.XWikiUsersClass;
 import com.celements.web.classes.oldcore.XWikiUsersClass.Type;
 import com.google.common.base.Strings;
@@ -35,30 +35,14 @@ public class CelementsUser implements User {
   private final ClassDefinition usersClass;
   private final IModelAccessFacade modelAccess;
   private final ModelUtils modelUtils;
-
-  /**
-   * Used to convert a Document Reference to a username to a string. Note that we must be careful
-   * not to include the
-   * wiki name as part of the serialized name since user names are saved in the database (for
-   * example as the document
-   * author when you create a new document) and we're only supposed to save the wiki part when the
-   * user is from
-   * another wiki. This should probably be fixed in the future though but it requires changing
-   * existing code that
-   * depend on this behavior.
-   */
-  private final EntityReferenceSerializer<String> compactWikiEntityReferenceSerializer;
-
   private XWikiDocument userDoc;
 
   @Inject
   public CelementsUser(IModelAccessFacade modelAccess, ModelUtils modelUtils,
-      @Named(XWikiUsersClass.CLASS_DEF_HINT) ClassDefinition usersClass,
-      @Named("compactwiki") EntityReferenceSerializer<String> compactWikiEntityReferenceSerializer) {
+      @Named(XWikiUsersClass.CLASS_DEF_HINT) ClassDefinition usersClass) {
     this.modelAccess = modelAccess;
     this.modelUtils = modelUtils;
     this.usersClass = usersClass;
-    this.compactWikiEntityReferenceSerializer = compactWikiEntityReferenceSerializer;
   }
 
   @Override
@@ -90,8 +74,8 @@ public class CelementsUser implements User {
 
   @Override
   public XWikiUser asXWikiUser() {
-    return new XWikiUser(this.compactWikiEntityReferenceSerializer.serialize(getDocRef()),
-        isGlobal());
+    return new XWikiUser(
+        modelUtils.serializeRef(getDocRef(), ReferenceSerializationMode.COMPACT_WIKI));
   }
 
   /**
