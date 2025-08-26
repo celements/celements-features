@@ -4,10 +4,11 @@ import java.util.Objects;
 import java.util.Optional;
 
 import javax.annotation.concurrent.NotThreadSafe;
+import javax.inject.Inject;
+import javax.inject.Named;
 
 import org.xwiki.component.annotation.Component;
 import org.xwiki.component.annotation.InstantiationStrategy;
-import org.xwiki.component.annotation.Requirement;
 import org.xwiki.component.descriptor.ComponentInstantiationStrategy;
 import org.xwiki.model.reference.DocumentReference;
 
@@ -17,6 +18,7 @@ import com.celements.model.classes.ClassDefinition;
 import com.celements.model.classes.fields.ClassField;
 import com.celements.model.object.xwiki.XWikiObjectFetcher;
 import com.celements.model.util.ModelUtils;
+import com.celements.model.util.ReferenceSerializationMode;
 import com.celements.web.classes.oldcore.XWikiUsersClass;
 import com.celements.web.classes.oldcore.XWikiUsersClass.Type;
 import com.google.common.base.Strings;
@@ -30,16 +32,18 @@ public class CelementsUser implements User {
 
   public static final String NAME = "CelementsUser";
 
-  @Requirement(XWikiUsersClass.CLASS_DEF_HINT)
-  private ClassDefinition usersClass;
-
-  @Requirement
-  private IModelAccessFacade modelAccess;
-
-  @Requirement
-  private ModelUtils modelUtils;
-
+  private final ClassDefinition usersClass;
+  private final IModelAccessFacade modelAccess;
+  private final ModelUtils modelUtils;
   private XWikiDocument userDoc;
+
+  @Inject
+  public CelementsUser(IModelAccessFacade modelAccess, ModelUtils modelUtils,
+      @Named(XWikiUsersClass.CLASS_DEF_HINT) ClassDefinition usersClass) {
+    this.modelAccess = modelAccess;
+    this.modelUtils = modelUtils;
+    this.usersClass = usersClass;
+  }
 
   @Override
   public void initialize(DocumentReference userDocRef) throws UserInstantiationException {
@@ -70,7 +74,8 @@ public class CelementsUser implements User {
 
   @Override
   public XWikiUser asXWikiUser() {
-    return new XWikiUser(modelUtils.serializeRefLocal(getDocRef()), isGlobal());
+    return new XWikiUser(
+        modelUtils.serializeRef(getDocRef(), ReferenceSerializationMode.COMPACT_WIKI));
   }
 
   /**

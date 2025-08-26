@@ -43,6 +43,7 @@ import com.celements.model.access.IModelAccessFacade;
 import com.celements.model.access.exception.DocumentAccessException;
 import com.celements.model.access.exception.DocumentSaveException;
 import com.celements.model.classes.ClassDefinition;
+import com.celements.model.context.Contextualiser;
 import com.celements.model.context.ModelContext;
 import com.celements.model.object.xwiki.XWikiObjectEditor;
 import com.celements.model.reference.RefBuilder;
@@ -57,6 +58,7 @@ import com.celements.web.service.IWebUtilsService;
 import com.celements.web.token.TokenLDAPAuthServiceImpl;
 import com.google.common.base.Splitter;
 import com.google.common.base.Strings;
+import com.xpn.xwiki.XWikiConstant;
 import com.xpn.xwiki.XWikiException;
 import com.xpn.xwiki.doc.XWikiDocument;
 import com.xpn.xwiki.objects.BaseObject;
@@ -268,6 +270,11 @@ public class CelementsUserService implements UserService {
         .values().findAny();
   }
 
+  /**
+   * @deprecated instead use {@link #getUserForLoginField}
+   * @since 6.9
+   */
+  @Deprecated(since = "6.9", forRemoval = true)
   @Override
   public com.google.common.base.Optional<User> getUserForLoginField(String login) {
     return getUserForLoginField(login, getPossibleLoginFields());
@@ -284,6 +291,12 @@ public class CelementsUserService implements UserService {
       Collection<String> possibleLoginFields) {
     Optional<User> user = getPossibleUserForLoginField(login, possibleLoginFields);
     return com.google.common.base.Optional.fromJavaUtil(user.filter(not(User::isSuspended)));
+  }
+
+  private User loadUniqueUserFromWikiForQuery(String login,
+      Collection<String> possibleLoginFields, WikiReference wikiRef) {
+    return new Contextualiser().withWiki(wikiRef)
+        .execute(() -> loadUniqueUserForQuery(login, possibleLoginFields));
   }
 
   private User loadUniqueUserForQuery(String login, Collection<String> possibleLoginFields) {
@@ -368,27 +381,37 @@ public class CelementsUserService implements UserService {
   }
 
   @Override
+  public Optional<User> getPossibleUserForLoginField(String login) {
+    return getPossibleUserForLoginField(login, getPossibleLoginFields());
+  }
+
+  @Override
   public Optional<User> getPossibleUserForLoginField(@NotNull String login,
       @Nullable Collection<String> possibleLoginFields) {
     login = Strings.nullToEmpty(login).trim();
     checkArgument(!login.isEmpty());
-    possibleLoginFields = Optional.ofNullable(possibleLoginFields)
-        .map(Collection::stream).orElseGet(Stream::empty)
+    Set<String> selectedLoginFields = Optional.ofNullable(possibleLoginFields)
+        .map(Collection::stream).orElse(Stream.empty())
         .filter(new UserClassFieldFilter())
         .collect(toImmutableSet());
-    if (possibleLoginFields.isEmpty()) {
-      possibleLoginFields = Set.of(DEFAULT_LOGIN_FIELD);
+    if (selectedLoginFields.isEmpty()) {
+      selectedLoginFields = Set.of(DEFAULT_LOGIN_FIELD);
     }
     User user = null;
-    if (possibleLoginFields.contains(DEFAULT_LOGIN_FIELD)) {
+    if (selectedLoginFields.contains(DEFAULT_LOGIN_FIELD)) {
       try {
         user = getUser(resolveUserDocRef(login));
       } catch (UserInstantiationException exc) {
-        LOGGER.debug("getUserForData - login [{}] is not valid user name", login, exc);
+        LOGGER.debug("login [{}] is not valid user name", login, exc);
       }
     }
     if (user == null) {
-      user = loadUniqueUserForQuery(login, possibleLoginFields);
+      user = loadUniqueUserForQuery(login, selectedLoginFields);
+      if ((user == null) && !context.isMainWiki()) {
+        user = loadUniqueUserFromWikiForQuery(login, selectedLoginFields, XWikiConstant.MAIN_WIKI);
+        LOGGER.debug("no local user found, main-wiki lookup for login [{}] results in [{}]", login,
+            user);
+      }
     }
     return Optional.ofNullable(user);
   }
