@@ -39,6 +39,7 @@ public class AuthenticationScriptService implements ScriptService {
   private final ModelContext context;
   private final WikiManagerService wikiManager;
 
+  @Inject
   public AuthenticationScriptService(
       IAuthenticationServiceRole authenticationService,
       UserService userService,
