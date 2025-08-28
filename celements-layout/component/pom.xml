@@ -19,13 +19,13 @@
     <dependency>
       <groupId>com.celements</groupId>
       <artifactId>celements-model</artifactId>
-      <version>6.4</version>
+      <version>6.5</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>com.celements</groupId>
       <artifactId>celements-spring-mvc</artifactId>
-      <version>6.2</version>
+      <version>6.3-SNAPSHOT</version>
       <scope>provided</scope>
     </dependency>
   </dependencies>
