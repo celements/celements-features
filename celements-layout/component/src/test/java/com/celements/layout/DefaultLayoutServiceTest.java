@@ -19,7 +19,6 @@
  */
 package com.celements.layout;
 
-import static com.celements.common.test.CelementsTestUtils.*;
 import static com.celements.layout.DefaultLayoutService.*;
 import static java.util.stream.Collectors.*;
 import static org.easymock.EasyMock.*;
@@ -72,11 +71,11 @@ public class DefaultLayoutServiceTest extends AbstractComponentTest {
 
   @Before
   public void prepareTest() throws Exception {
-    context = getContext();
+    context = getXContext();
     context.setAction("view");
-    xwiki = getWikiMock();
-    storeMock = createDefaultMock(XWikiStoreInterface.class);
-    expect(xwiki.getStore()).andReturn(storeMock).anyTimes();
+    xwiki = getMock(XWiki.class);
+    // storeMock = createDefaultMock(XWikiStoreInterface.class);
+    // expect(xwiki.getStore()).andReturn(storeMock).anyTimes();
     queryManagerMock = registerComponentMock(QueryManager.class);
     modelAccessMock = registerComponentMock(IModelAccessFacade.class);
     layoutService = (DefaultLayoutService) Utils.getComponent(LayoutServiceRole.class);
@@ -968,7 +967,7 @@ public class DefaultLayoutServiceTest extends AbstractComponentTest {
   }
 
   private WikiReference getWikiRef() {
-    return new WikiReference(getContext().getDatabase());
+    return new WikiReference(getXContext().getDatabase());
   }
 
 }
