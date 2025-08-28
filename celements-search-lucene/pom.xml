@@ -28,7 +28,7 @@
     <version>6.6</version>
   </parent>
   <artifactId>celements-search-lucene</artifactId>
-  <version>6.3</version>
+  <version>6.4-SNAPSHOT</version>
   <name>Celements Search Lucene</name>
   <dependencies>
     <dependency>
@@ -98,6 +98,6 @@
     <connection>scm:git:git@github.com:celements/celements-features.git</connection>
     <developerConnection>scm:git:git@github.com:celements/celements-features.git</developerConnection>
     <url>https://github.com/celements/celements-features/celements-search-lucene</url>
-    <tag>celements-search-lucene-6.3</tag>
+    <tag>HEAD</tag>
   </scm>
 </project>
