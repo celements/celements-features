@@ -39,6 +39,12 @@
     </dependency>
     <dependency>
       <groupId>com.celements</groupId>
+      <artifactId>celements-wiki-manager</artifactId>
+      <version>6.1-SNAPSHOT</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.celements</groupId>
       <artifactId>celements-core</artifactId>
       <version>6.11</version>
       <scope>provided</scope>
