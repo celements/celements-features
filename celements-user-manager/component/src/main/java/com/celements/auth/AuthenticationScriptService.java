@@ -6,22 +6,25 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
+import javax.inject.Inject;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xwiki.component.annotation.Component;
-import org.xwiki.component.annotation.Requirement;
 import org.xwiki.configuration.ConfigurationSource;
 import org.xwiki.model.reference.DocumentReference;
 import org.xwiki.script.service.ScriptService;
 
 import com.celements.auth.user.UserService;
 import com.celements.model.context.ModelContext;
+import com.celements.model.util.ModelUtils;
 import com.celements.rights.access.RightsAccessScriptService;
 import com.celements.web.plugin.cmd.PasswordRecoveryAndEmailValidationCommand;
 import com.celements.web.plugin.cmd.PossibleLoginsCommand;
 import com.celements.web.plugin.cmd.RemoteUserValidator;
 import com.celements.web.plugin.cmd.UserNameForUserDataCommand;
 import com.celements.web.token.NewCelementsTokenForUserCommand;
+import com.celements.wiki.service.WikiManagerService;
 import com.xpn.xwiki.XWiki;
 import com.xpn.xwiki.XWikiContext;
 import com.xpn.xwiki.XWikiException;
@@ -32,17 +35,26 @@ public class AuthenticationScriptService implements ScriptService {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(AuthenticationScriptService.class);
 
-  @Requirement
-  private IAuthenticationServiceRole authenticationService;
+  private final IAuthenticationServiceRole authenticationService;
+  private final UserService userService;
+  private final ConfigurationSource cfgSrc;
+  private final ModelContext context;
+  private final WikiManagerService wikiManager;
 
-  @Requirement
-  private UserService userService;
-
-  @Requirement
-  private ConfigurationSource cfgSrc;
-
-  @Requirement
-  private ModelContext context;
+  @Inject
+  public AuthenticationScriptService(
+      IAuthenticationServiceRole authenticationService,
+      UserService userService,
+      ConfigurationSource cfgSrc,
+      ModelContext context,
+      WikiManagerService wikiManager,
+      ModelUtils modelUtils) {
+    this.authenticationService = authenticationService;
+    this.userService = userService;
+    this.cfgSrc = cfgSrc;
+    this.context = context;
+    this.wikiManager = wikiManager;
+  }
 
   @Deprecated
   private XWikiContext getXWikiContext() {
@@ -279,6 +291,10 @@ public class AuthenticationScriptService implements ScriptService {
 
   public boolean isLoginDisabled() {
     return firstNonNull(cfgSrc.getProperty("celements.auth.login.disabled", false), false);
+  }
+
+  public boolean isOicdEnabled() {
+    return wikiManager.isOicdEnabled(context.getWikiRef());
   }
 
   // TODO [CELDEV-698] use RightsAccessService
