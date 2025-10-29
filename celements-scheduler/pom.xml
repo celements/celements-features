@@ -28,7 +28,7 @@
     <version>6.6</version>
   </parent>
   <artifactId>celements-scheduler</artifactId>
-  <version>6.2-SNAPSHOT</version>
+  <version>6.2</version>
   <name>Celements Scheduler</name>
   <dependencies>
     <dependency>
@@ -73,6 +73,6 @@
     <connection>scm:git:git@github.com:celements/celements-features.git</connection>
     <developerConnection>scm:git:git@github.com:celements/celements-features.git</developerConnection>
     <url>https://github.com/celements/celements-features/celements-scheduler</url>
-    <tag>HEAD</tag>
+    <tag>celements-scheduler-6.2</tag>
   </scm>
 </project>
