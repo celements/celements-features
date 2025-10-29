@@ -4,7 +4,6 @@ import java.util.Objects;
 
 import javax.inject.Inject;
 
-import org.python.google.common.base.Strings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -29,6 +28,7 @@ import com.celements.model.context.ModelContext;
 import com.celements.model.reference.RefBuilder;
 import com.celements.pagelayout.LayoutServiceRole;
 import com.celements.spring.security.AuthenticatedBaseController;
+import com.google.common.base.Strings;
 import com.xpn.xwiki.api.Document;
 import com.xpn.xwiki.doc.XWikiDocument;
 
@@ -66,11 +66,11 @@ public class LayoutController extends AuthenticatedBaseController {
     return layoutService.renderLayoutAsJson(layoutRef);
   }
 
-  // TODO CELDEV-1270 Encoding default of Celements is not UTF-8, that's why we had to set it
-  // explicitly.
   @CrossOrigin(origins = "*")
   @GetMapping(
       value = "/partial",
+      // TODO CELDEV-1270 Encoding default of Celements is not UTF-8, that's why we had to set it
+      // explicitly.
       produces = MediaType.APPLICATION_XML_VALUE + ";charset=UTF-8")
   String renderLayoutPartial(RenderPartialRequest renderPartialRequest) {
     LOGGER.info("GET ModelAttribute renderLayoutPartial: {}", renderPartialRequest);
