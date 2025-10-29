@@ -35,6 +35,7 @@
       <groupId>com.celements</groupId>
       <artifactId>celements-model</artifactId>
       <version>6.2</version>
+      <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>org.opensymphony.quartz</groupId>

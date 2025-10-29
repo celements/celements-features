@@ -57,6 +57,7 @@
       <groupId>com.celements</groupId>
       <artifactId>celements-scheduler</artifactId>
       <version>6.1</version>
+      <scope>provided</scope>
     </dependency>
   </dependencies>
   <scm>
