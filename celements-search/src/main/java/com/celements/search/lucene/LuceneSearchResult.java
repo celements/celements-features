@@ -36,7 +36,7 @@ public class LuceneSearchResult {
   private final boolean skipChecks;
 
   private int offset = 0;
-  private int limit = 0;
+  private int limit = -1;
 
   LuceneSearchResult(LuceneQuery query, List<String> sortFields, List<String> languages,
       boolean skipChecks) {
@@ -154,7 +154,7 @@ public class LuceneSearchResult {
   private List<SearchResult> getSearchResultList() throws LuceneSearchException {
     SearchResults results = luceneSearch();
     int offset = (getOffset() <= 0 ? 1 : getOffset() + 1);
-    int limit = (getLimit() <= 0 ? getSize() : getLimit());
+    int limit = (getLimit() < 0 ? getSize() : getLimit());
     return results.getResults(offset, limit);
   }
 
