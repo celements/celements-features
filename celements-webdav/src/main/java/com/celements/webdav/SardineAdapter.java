@@ -18,8 +18,6 @@ import java.util.Optional;
 import javax.annotation.Nullable;
 import javax.net.ssl.SSLContext;
 import javax.validation.constraints.NotNull;
-import javax.ws.rs.core.UriBuilder;
-import javax.ws.rs.core.UriBuilderException;
 
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.io.IOUtils;
@@ -54,6 +52,9 @@ import com.github.sardine.DavResource;
 import com.github.sardine.Sardine;
 import com.github.sardine.impl.SardineException;
 import com.github.sardine.impl.SardineImpl;
+
+import jakarta.ws.rs.core.UriBuilder;
+import jakarta.ws.rs.core.UriBuilderException;
 
 @Component(SardineAdapter.NAME)
 public class SardineAdapter implements WebDavService, Initializable {
@@ -190,7 +191,8 @@ public class SardineAdapter implements WebDavService, Initializable {
         if (checkNotNull(path).isAbsolute()) {
           path = Paths.get("/", baseUrl.getPath()).relativize(path);
         }
-        return UriBuilder.fromUri(baseUrl.toURI()).path(path.normalize().toString()).build().toURL();
+        return UriBuilder.fromUri(baseUrl.toURI()).path(path.normalize().toString()).build()
+            .toURL();
       } catch (URISyntaxException | UriBuilderException | MalformedURLException exc) {
         // this shouldn't happen since baseUrl and path are already well defined objects
         throw new IllegalArgumentException(MessageFormat.format("unable to build url with "
