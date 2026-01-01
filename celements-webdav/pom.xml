@@ -63,6 +63,12 @@
       <scope>provided</scope>
     </dependency>
 
+    <dependency>
+      <groupId>javax.ws.rs</groupId>
+      <artifactId>javax.ws.rs-api</artifactId>
+      <scope>provided</scope>
+    </dependency>
+
     <!-- compile dependencies specific to this project -->
     <dependency>
       <!-- Sardine WebDAV Client -->
