@@ -25,8 +25,6 @@ import java.util.Enumeration;
 import java.util.List;
 import java.util.Map;
 
-import org.hibernate.HibernateException;
-import org.hibernate.Session;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xwiki.component.annotation.Component;
@@ -36,7 +34,7 @@ import org.xwiki.model.reference.DocumentReference;
 import com.celements.model.context.ModelContext;
 import com.celements.payment.exception.PaymentException;
 import com.celements.payment.raw.PaymentRawObject;
-import com.celements.web.plugin.api.CelementsWebPluginApi;
+import com.celements.web.plugin.CelementsWebPlugin;
 import com.google.common.base.Functions;
 import com.google.common.collect.Lists;
 import com.xpn.xwiki.XWikiContext;
@@ -69,9 +67,9 @@ public class PaymentService implements IPaymentService {
         XWikiDocument actionXdoc = getXWikiContext().getWiki().getDocument(callbackDocRef,
             getXWikiContext());
         Document actionDoc = actionXdoc.newDocument(getXWikiContext());
-        CelementsWebPluginApi celementsweb = (CelementsWebPluginApi) getXWikiContext().getWiki().getPluginApi(
-            "celementsweb", getXWikiContext());
-        celementsweb.getPlugin().executeAction(actionDoc, data, actionXdoc, getXWikiContext());
+        CelementsWebPlugin celementsweb = (CelementsWebPlugin) getXWikiContext().getWiki()
+            .getPlugin("celementsweb", getXWikiContext());
+        celementsweb.executeAction(actionDoc, data, actionXdoc, getXWikiContext());
       } else {
         LOGGER.warn("Failed to execute payment action because Payment.CallbackActions"
             + " does not exist in [" + getXWikiContext().getDatabase() + "].");
@@ -84,13 +82,9 @@ public class PaymentService implements IPaymentService {
   @Override
   public void storePaymentObject(final PaymentRawObject paymentObj) throws PaymentException {
     try {
-      getHibStore().executeWrite(context.getXWikiContext(), true, new HibernateCallback<Void>() {
-
-        @Override
-        public Void doInHibernate(Session session) throws HibernateException {
-          session.saveOrUpdate(paymentObj);
-          return null;
-        }
+      getHibStore().executeWrite(context.getXWikiContext(), true, (HibernateCallback<Void>) session -> {
+        session.saveOrUpdate(paymentObj);
+        return null;
       });
       LOGGER.info("storePaymentObject: '{}'", paymentObj);
     } catch (XWikiException xwe) {
