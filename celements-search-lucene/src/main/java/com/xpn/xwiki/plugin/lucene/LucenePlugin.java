@@ -29,8 +29,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 import java.util.Set;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 import javax.validation.constraints.NotNull;
 
@@ -70,7 +68,6 @@ import com.celements.search.lucene.index.queue.IndexQueuePriority;
 import com.celements.search.lucene.index.rebuild.LuceneIndexRebuildService;
 import com.google.common.base.Strings;
 import com.google.common.collect.Iterables;
-import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.xpn.xwiki.XWikiContext;
 import com.xpn.xwiki.api.Api;
 import com.xpn.xwiki.api.XWiki;
@@ -133,11 +130,6 @@ public class LucenePlugin extends XWikiDefaultPlugin {
   private volatile Analyzer analyzer;
 
   /**
-   * The Executor running the index updater.
-   */
-  private final ExecutorService indexUpdaterExecutor;
-
-  /**
    * The current searchers provider.
    */
   private SearcherProvider searcherProvider;
@@ -152,8 +144,6 @@ public class LucenePlugin extends XWikiDefaultPlugin {
 
   public LucenePlugin(String name, String className, XWikiContext context) {
     super(name, className, context);
-    indexUpdaterExecutor = Executors.newSingleThreadExecutor(
-        new ThreadFactoryBuilder().setNameFormat("IndexUpdater-%d").build());
   }
 
   @Override
@@ -170,7 +160,7 @@ public class LucenePlugin extends XWikiDefaultPlugin {
   protected void finalize() throws Throwable {
     LOGGER.error("Lucene plugin will exit!");
     if (this.indexUpdater != null) {
-      this.indexUpdater.doExit();
+      this.indexUpdater.stop();
     }
     super.finalize();
   }
@@ -547,8 +537,8 @@ public class LucenePlugin extends XWikiDefaultPlugin {
     try {
       indexDirs = getIndexDirectories("");
       IndexWriter writer = openWriter(getWriteDirectory(), OpenMode.CREATE_OR_APPEND);
-      this.indexUpdater = new IndexUpdater(writer, this);
-      indexUpdaterExecutor.submit(indexUpdater);
+      indexUpdater = new IndexUpdater(writer, this);
+      indexUpdater.start();
       getIndexRebuildService().initialize(indexUpdater);
       LOGGER.info("Lucene plugin initialized.");
     } catch (IOException exc) {
@@ -686,7 +676,7 @@ public class LucenePlugin extends XWikiDefaultPlugin {
   }
 
   public void optimizeIndex() {
-    indexUpdater.doOptimize();
+    indexUpdater.flagOptimize();
   }
 
   public Analyzer getAnalyzer() {

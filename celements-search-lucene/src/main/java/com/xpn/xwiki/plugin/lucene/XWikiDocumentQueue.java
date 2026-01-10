@@ -44,7 +44,7 @@ public class XWikiDocumentQueue {
   /**
    * Maps names of documents to the document instances.
    */
-  private Map<String, AbstractIndexData> documentsByName = new HashMap<String, AbstractIndexData>();
+  private Map<String, AbstractIndexData> documentsByName = new HashMap<>();
 
   /**
    * Maintains FIFO order.
@@ -61,7 +61,11 @@ public class XWikiDocumentQueue {
    */
   public synchronized AbstractIndexData remove() throws BufferUnderflowException {
     LOGGER.debug("removing element from queue.");
-    return this.documentsByName.remove(this.namesQueue.remove());
+    try {
+      return documentsByName.remove(namesQueue.remove());
+    } catch (BufferUnderflowException e) {
+      return null;
+    }
   }
 
   /**
