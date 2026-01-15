@@ -68,7 +68,7 @@ public class S3Config {
     var accessKey = cfgSrc.getProperty("celements.s3.accessKey", "").trim();
     var secretKey = cfgSrc.getProperty("celements.s3.secretKey", "").trim();
     if (accessKey.isEmpty() || secretKey.isEmpty()) {
-      throw new IllegalArgumentException("s3.accessKey/secretKey missing");
+      throw new IllegalArgumentException("celements.s3.accessKey/secretKey missing");
     }
     return AwsBasicCredentials.builder()
         .accessKeyId(accessKey)
