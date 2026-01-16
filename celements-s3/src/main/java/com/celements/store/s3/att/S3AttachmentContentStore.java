@@ -1,4 +1,4 @@
-package com.celements.store.s3;
+package com.celements.store.s3.att;
 
 import java.util.Optional;
 
