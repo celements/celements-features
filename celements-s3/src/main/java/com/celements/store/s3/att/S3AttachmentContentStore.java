@@ -5,6 +5,8 @@ import java.util.Optional;
 import javax.inject.Inject;
 import javax.inject.Named;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 
@@ -22,6 +24,9 @@ import software.amazon.awssdk.services.s3.model.S3Exception;
 @Named(S3AttachmentContentStore.STORE_NAME)
 @Lazy
 public class S3AttachmentContentStore implements AttachmentContentStore {
+
+  private static final Logger LOGGER = LoggerFactory
+      .getLogger(S3AttachmentContentStore.class);
 
   public static final String STORE_NAME = "store.attachment.content.s3";
 
@@ -64,6 +69,7 @@ public class S3AttachmentContentStore implements AttachmentContentStore {
 
   public boolean hasContent(XWikiAttachment attachment) throws AttachmentContentStoreException {
     var s3Key = buildS3Key(attachment);
+    LOGGER.info("hasContent - {} in {}", attachment, s3Key);
     try {
       s3Client.headObject(builder -> builder
           .bucket(s3BucketFilebase)
@@ -81,6 +87,7 @@ public class S3AttachmentContentStore implements AttachmentContentStore {
   @Override
   public void saveContent(XWikiAttachmentContent content) throws AttachmentContentStoreException {
     var s3Key = buildS3Key(content.getAttachment());
+    LOGGER.info("saveContent - {} to {}", content.getAttachment(), s3Key);
     try {
       try (var data = content.getContentInputStream()) {
         s3Client.putObject(builder -> builder
@@ -100,6 +107,7 @@ public class S3AttachmentContentStore implements AttachmentContentStore {
   @Override
   public void loadContent(XWikiAttachmentContent content) throws AttachmentContentStoreException {
     var s3Key = buildS3Key(content.getAttachment());
+    LOGGER.info("loadContent - {} from {}", content.getAttachment(), s3Key);
     try {
       try (var data = s3Client.getObject(builder -> builder
           .bucket(s3BucketFilebase)
@@ -118,6 +126,7 @@ public class S3AttachmentContentStore implements AttachmentContentStore {
   @Override
   public void deleteContent(XWikiAttachmentContent content) throws AttachmentContentStoreException {
     var s3Key = buildS3Key(content.getAttachment());
+    LOGGER.info("deleteContent - {} from {}", content.getAttachment(), s3Key);
     try {
       s3Client.deleteObject(builder -> builder
           .bucket(s3BucketFilebase)
