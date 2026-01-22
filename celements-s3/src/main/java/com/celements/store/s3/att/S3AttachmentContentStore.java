@@ -1,5 +1,6 @@
 package com.celements.store.s3.att;
 
+import java.util.List;
 import java.util.Optional;
 
 import javax.inject.Inject;
@@ -18,6 +19,7 @@ import com.xpn.xwiki.store.AttachmentContentStore;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
+import software.amazon.awssdk.services.s3.model.ObjectIdentifier;
 import software.amazon.awssdk.services.s3.model.S3Exception;
 
 @Component
@@ -53,22 +55,31 @@ public class S3AttachmentContentStore implements AttachmentContentStore {
 
   /**
    * Builds the S3 key for the given attachment. The key structure is as follows:
-   * attcontent/v1/app/{appName}/wiki/{wikiName}/doc/{docId}/att/{attachmentId}/rev/{version}
+   * attachment/{appName}/{wikiName}/{docId}/{attachmentId}
    */
-  public String buildS3Key(XWikiAttachment attachment) {
+  public String buildS3AttachmentKey(XWikiAttachment attachment) {
     var doc = attachment.getDoc();
     var wiki = doc.getDocumentReference().getWikiReference();
     return String.join("/",
-        "attcontent", "v1", // base path
-        "app", nodeIdentity.appName(), // allow bucket multi-tenancy by app name
-        "wiki", wiki.getName(), // identify wiki
-        "doc", Long.toString(doc.getId()), // identify document
-        "att", Long.toString(attachment.getId()), // identify attachment
-        "rev", attachment.getVersion()); // identify attachment version
+        "attachment", // base path
+        nodeIdentity.appName(), // allow bucket multi-tenancy by app name
+        wiki.getName(), // identify wiki
+        Long.toString(doc.getId()), // identify document
+        Long.toString(attachment.getId())); // identify attachment
+  }
+
+  /**
+   * Builds the S3 key for the given attachment. The key structure is as follows:
+   * attachment/{appName}/{wikiName}/{docId}/{attachmentId}/{version}
+   */
+  public String buildS3AttachmentVersionKey(XWikiAttachment attachment) {
+    return String.join("/",
+        buildS3AttachmentKey(attachment),
+        attachment.getVersion()); // identify attachment version
   }
 
   public boolean hasContent(XWikiAttachment attachment) throws AttachmentContentStoreException {
-    var s3Key = buildS3Key(attachment);
+    var s3Key = buildS3AttachmentVersionKey(attachment);
     LOGGER.info("hasContent - {} in {}", attachment, s3Key);
     try {
       s3Client.headObject(builder -> builder
@@ -86,7 +97,7 @@ public class S3AttachmentContentStore implements AttachmentContentStore {
 
   @Override
   public void saveContent(XWikiAttachmentContent content) throws AttachmentContentStoreException {
-    var s3Key = buildS3Key(content.getAttachment());
+    var s3Key = buildS3AttachmentVersionKey(content.getAttachment());
     LOGGER.info("saveContent - {} to {}", content.getAttachment(), s3Key);
     try {
       try (var data = content.getContentInputStream()) {
@@ -106,7 +117,7 @@ public class S3AttachmentContentStore implements AttachmentContentStore {
 
   @Override
   public void loadContent(XWikiAttachmentContent content) throws AttachmentContentStoreException {
-    var s3Key = buildS3Key(content.getAttachment());
+    var s3Key = buildS3AttachmentVersionKey(content.getAttachment());
     LOGGER.info("loadContent - {} from {}", content.getAttachment(), s3Key);
     try {
       try (var data = s3Client.getObject(builder -> builder
@@ -124,8 +135,30 @@ public class S3AttachmentContentStore implements AttachmentContentStore {
   }
 
   @Override
+  public void deleteContent(XWikiAttachment attachment) throws AttachmentContentStoreException {
+    var s3Prefix = buildS3AttachmentKey(attachment) + "/";
+    LOGGER.info("deleteContent - {} from {}", attachment, s3Prefix);
+    List<ObjectIdentifier> batch = s3Client.listObjectsV2(builder -> builder
+        .bucket(s3BucketFilebase)
+        .prefix(s3Prefix))
+        .contents()
+        .stream()
+        .map(s3Object -> ObjectIdentifier.builder().key(s3Object.key()).build())
+        .toList();
+    if (batch.isEmpty()) {
+      return;
+    } else if (batch.size() >= 1000) {
+      throw new AttachmentContentStoreException(
+          "Too many objects to delete in S3 for attachment: " + attachment, null);
+    }
+    s3Client.deleteObjects(builder -> builder
+        .bucket(s3BucketFilebase)
+        .delete(deleteBuilder -> deleteBuilder.objects(batch)));
+  }
+
+  @Override
   public void deleteContent(XWikiAttachmentContent content) throws AttachmentContentStoreException {
-    var s3Key = buildS3Key(content.getAttachment());
+    var s3Key = buildS3AttachmentVersionKey(content.getAttachment());
     LOGGER.info("deleteContent - {} from {}", content.getAttachment(), s3Key);
     try {
       s3Client.deleteObject(builder -> builder
