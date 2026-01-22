@@ -61,8 +61,8 @@ public class S3AttachmentContentStore implements AttachmentContentStore {
     var doc = attachment.getDoc();
     var wiki = doc.getDocumentReference().getWikiReference();
     return String.join("/",
-        "attachment", // base path
-        nodeIdentity.appName(), // allow bucket multi-tenancy by app name
+        nodeIdentity.clusterName(), // allow bucket multi-tenancy by cluster name
+        "attachments", // subbucket for attachments
         wiki.getName(), // identify wiki
         Long.toString(doc.getId()), // identify document
         Long.toString(attachment.getId())); // identify attachment
