@@ -8,8 +8,10 @@ import javax.inject.Inject;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.xwiki.model.reference.DocumentReference;
+import org.xwiki.model.reference.EntityReference;
 import org.xwiki.model.reference.WikiReference;
 
 import com.celements.model.access.IModelAccessFacade;
@@ -23,6 +25,7 @@ import com.xpn.xwiki.store.AttachmentContentStore.AttachmentContentStoreExceptio
 import one.util.streamex.StreamEx;
 
 @Service
+@Lazy
 public class S3AttachmentContentMigrationService {
 
   static final Logger LOGGER = LoggerFactory.getLogger(S3AttachmentContentMigrationService.class);
@@ -45,52 +48,74 @@ public class S3AttachmentContentMigrationService {
   }
 
   private static String getSqlAttachmentsWithContent() {
-    return "SELECT d.XWD_FULLNAME "
+    return "SELECT DISTINCT d.XWD_FULLNAME, a.XWA_FILENAME "
         + "FROM xwikidoc d "
         + "JOIN xwikiattachment a ON d.XWD_ID = a.XWA_DOC_ID "
         + "JOIN xwikiattachment_content c ON a.XWA_ID = c.XWA_ID";
   }
 
-  public void migrate(WikiReference wiki) throws XWikiException {
+  public void migrate(WikiReference wiki) throws XWikiException, AttachmentContentStoreException {
     var result = queryExecutor.executeReadSql(getSqlAttachmentsWithContent());
     LOGGER.info("[{}] migrating {} attachments to S3 store", wiki.getName(), result.size());
+    var count = 0;
+    var countContents = 0;
+    var processed = 0;
     for (List<String> row : result) {
       var docRef = modelUtils.resolveRef(row.get(0), DocumentReference.class, wiki);
-      try {
-        migrate(docRef);
-      } catch (Exception exc) {
-        LOGGER.warn("[{}] failed migrating document: {}", wiki.getName(), docRef, exc);
+      var fileName = row.get(1);
+      var att = modelAccess.getOrCreateDocument(docRef).getAttachment(fileName);
+      if (att != null) {
+        try {
+          countContents += migrate(att);
+          count++;
+        } catch (XWikiException exc) {
+          LOGGER.warn("[{}] failed migrating attachment: {}",
+              wiki.getName(), serialize(docRef) + "@" + fileName, exc);
+        }
+      }
+      processed++;
+      if ((processed % 100) == 0) {
+        LOGGER.debug("[{}] processed {}/{} attachments", wiki.getName(), processed, result.size());
       }
     }
+    LOGGER.info("[{}] migrated {} attachments with {} contents to S3 store",
+        wiki.getName(), count, countContents);
   }
 
-  public void migrate(DocumentReference docRef) {
-    for (var att : modelAccess.getOrCreateDocument(docRef).getAttachmentList()) {
-      try {
-        migrate(att);
-      } catch (XWikiException | AttachmentContentStoreException exc) {
-        LOGGER.warn("[{}] failed migrating: {}",
-            att.getDoc().getDocumentReference().getWikiReference().getName(), att, exc);
-      }
-    }
-  }
-
-  public void migrate(XWikiAttachment att)
-      throws XWikiException, AttachmentContentStoreException {
+  public int migrate(XWikiAttachment att) throws XWikiException, AttachmentContentStoreException {
     var archive = att.loadArchive();
     var versions = StreamEx.of(archive.getVersions()).append(att.getRCSVersion());
+    var count = 0;
     for (var v : versions.distinct()) {
-      pushToS3(archive.getRevision(v));
+      try {
+        if (pushToS3(archive.getRevision(v))) {
+          count++;
+        }
+      } catch (XWikiException exc) {
+        throw new XWikiException(0, 0, "Failed migrating " +
+            serialize(att.getAttachmentReference()) + "@" + v, exc);
+      }
     }
+    LOGGER.trace("[{}] migrated {} with {} contents",
+        defer(() -> att.getWikiReference().getName()),
+        defer(() -> serialize(att.getAttachmentReference())),
+        count);
+    return count;
   }
 
-  private void pushToS3(XWikiAttachment att)
+  private boolean pushToS3(XWikiAttachment att)
       throws XWikiException, AttachmentContentStoreException {
     if (!s3AttStore.hasContent(att)) {
-      LOGGER.debug("[{}] pushToS3 {}",
-          defer(() -> att.getDoc().getDocumentReference().getWikiReference().getName()),
+      LOGGER.trace("[{}] pushToS3 {}",
+          defer(() -> att.getWikiReference().getName()),
           defer(() -> s3AttStore.buildS3AttachmentVersionKey(att)));
       s3AttStore.saveContent(att.loadContent());
+      return true;
     }
+    return false;
+  }
+
+  private String serialize(EntityReference ref) {
+    return modelUtils.serializeRefLocal(ref);
   }
 }
