@@ -1,3 +1,8 @@
+com.xpn.xwiki.plugin.lucene.searcherProvider.SearcherProviderManager
+com.xpn.xwiki.plugin.lucene.searcherProvider.ActionExecutionEventListener
+com.xpn.xwiki.plugin.lucene.indexExtension.LuceneIndexExtensionService
+com.xpn.xwiki.plugin.lucene.searcherProvider.SearchProviderDebugScriptService
+com.xpn.xwiki.plugin.lucene.IndexRebuilder
 com.celements.search.lucene.LuceneSearchService
 com.celements.search.lucene.LuceneSearchScriptService
 com.celements.search.web.classes.WebSearchClassConfig

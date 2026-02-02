@@ -190,7 +190,8 @@ public class SardineAdapter implements WebDavService, Initializable {
         if (checkNotNull(path).isAbsolute()) {
           path = Paths.get("/", baseUrl.getPath()).relativize(path);
         }
-        return UriBuilder.fromUri(baseUrl.toURI()).path(path.normalize().toString()).build().toURL();
+        return UriBuilder.fromUri(baseUrl.toURI()).path(path.normalize().toString()).build()
+            .toURL();
       } catch (URISyntaxException | UriBuilderException | MalformedURLException exc) {
         // this shouldn't happen since baseUrl and path are already well defined objects
         throw new IllegalArgumentException(MessageFormat.format("unable to build url with "
