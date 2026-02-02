@@ -14,13 +14,15 @@ import org.xwiki.model.reference.DocumentReference;
 import org.xwiki.model.reference.EntityReference;
 import org.xwiki.model.reference.WikiReference;
 
+import com.celements.init.XWikiProvider;
 import com.celements.model.access.IModelAccessFacade;
 import com.celements.model.util.ModelUtils;
-import com.celements.query.IQueryExecutionServiceRole;
+import com.celements.query.QueryExecutionService;
 import com.celements.store.s3.att.S3AttachmentContentStore;
 import com.xpn.xwiki.XWikiException;
 import com.xpn.xwiki.doc.XWikiAttachment;
 import com.xpn.xwiki.store.AttachmentContentStore.AttachmentContentStoreException;
+import com.xpn.xwiki.store.AttachmentVersioningStore;
 
 import one.util.streamex.StreamEx;
 
@@ -30,32 +32,34 @@ public class S3AttachmentContentMigrationService {
 
   static final Logger LOGGER = LoggerFactory.getLogger(S3AttachmentContentMigrationService.class);
 
-  private final IQueryExecutionServiceRole queryExecutor;
+  private final QueryExecutionService queryExecutor;
   private final S3AttachmentContentStore s3AttStore;
   private final IModelAccessFacade modelAccess;
   private final ModelUtils modelUtils;
+  private final XWikiProvider xwikiProvider;
 
   @Inject
   public S3AttachmentContentMigrationService(
-      IQueryExecutionServiceRole queryExecutor,
+      QueryExecutionService queryExecutor,
       S3AttachmentContentStore s3AttStore,
       IModelAccessFacade modelAccess,
-      ModelUtils modelUtils) {
+      ModelUtils modelUtils,
+      XWikiProvider xwikiProvider) {
     this.queryExecutor = queryExecutor;
     this.s3AttStore = s3AttStore;
     this.modelAccess = modelAccess;
     this.modelUtils = modelUtils;
-  }
-
-  private static String getSqlAttachmentsWithContent() {
-    return "SELECT DISTINCT d.XWD_FULLNAME, a.XWA_FILENAME "
-        + "FROM xwikidoc d "
-        + "JOIN xwikiattachment a ON d.XWD_ID = a.XWA_DOC_ID "
-        + "JOIN xwikiattachment_content c ON a.XWA_ID = c.XWA_ID";
+    this.xwikiProvider = xwikiProvider;
   }
 
   public void migrate(WikiReference wiki) throws XWikiException, AttachmentContentStoreException {
-    var result = queryExecutor.executeReadSql(getSqlAttachmentsWithContent());
+    migrateArchive(wiki);
+    // migrateRecycleBin(wiki); // TODO implement xwikiattrecyclebin migration
+  }
+
+  public void migrateArchive(WikiReference wiki)
+      throws XWikiException, AttachmentContentStoreException {
+    var result = queryExecutor.executeReadSql(wiki, String.class, getSqlAttachmentsWithContent());
     LOGGER.info("[{}] migrating {} attachments to S3 store", wiki.getName(), result.size());
     var count = 0;
     var countContents = 0;
@@ -82,11 +86,28 @@ public class S3AttachmentContentMigrationService {
         wiki.getName(), count, countContents);
   }
 
+  private static String getSqlAttachmentsWithContent() {
+    return "SELECT DISTINCT d.XWD_FULLNAME, a.XWA_FILENAME "
+        + "FROM xwikidoc d "
+        + "JOIN xwikiattachment a ON d.XWD_ID = a.XWA_DOC_ID "
+        + "JOIN xwikiattachment_content c ON a.XWA_ID = c.XWA_ID";
+  }
+
   public int migrate(XWikiAttachment att) throws XWikiException, AttachmentContentStoreException {
-    var archive = att.loadArchive();
-    var versions = StreamEx.of(archive.getVersions()).append(att.getRCSVersion());
+    var count = migrateArchive(att);
+    if (count > 0) { // content moved to s3, let's rebuild the archive without content blobs
+      var archive = att.loadArchive();
+      archive.rebuildArchive(false);
+      getAttachmentVersioningStore().saveArchive(archive, false);
+    }
+    return count;
+  }
+
+  public int migrateArchive(XWikiAttachment att)
+      throws XWikiException, AttachmentContentStoreException {
     var count = 0;
-    for (var v : versions.distinct()) {
+    var archive = att.loadArchive();
+    for (var v : StreamEx.of(archive.getVersions()).append(att.getRCSVersion()).distinct()) {
       try {
         if (pushToS3(archive.getRevision(v))) {
           count++;
@@ -117,5 +138,11 @@ public class S3AttachmentContentMigrationService {
 
   private String serialize(EntityReference ref) {
     return modelUtils.serializeRefLocal(ref);
+  }
+
+  private AttachmentVersioningStore getAttachmentVersioningStore() {
+    return xwikiProvider.get().orElseThrow(IllegalStateException::new)
+        .getAttachmentStore()
+        .getVersioningStore();
   }
 }
