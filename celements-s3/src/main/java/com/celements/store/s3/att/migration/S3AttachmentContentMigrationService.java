@@ -98,7 +98,7 @@ public class S3AttachmentContentMigrationService {
     if (count > 0) { // content moved to s3, let's rebuild the archive without content blobs
       var archive = att.loadArchive();
       archive.rebuildArchive(false);
-      getAttachmentVersioningStore().saveArchive(archive, false);
+      getAttachmentVersioningStore().saveArchive(archive, true);
     }
     return count;
   }

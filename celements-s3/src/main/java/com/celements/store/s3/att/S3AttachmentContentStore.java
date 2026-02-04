@@ -80,7 +80,7 @@ public class S3AttachmentContentStore implements AttachmentContentStore {
 
   public boolean hasContent(XWikiAttachment attachment) throws AttachmentContentStoreException {
     var s3Key = buildS3AttachmentVersionKey(attachment);
-    LOGGER.info("hasContent - {} in {}", attachment, s3Key);
+    LOGGER.debug("hasContent - {} in {}", attachment, s3Key);
     try {
       s3Client.headObject(builder -> builder
           .bucket(s3BucketFilebase)
@@ -118,14 +118,15 @@ public class S3AttachmentContentStore implements AttachmentContentStore {
   @Override
   public void loadContent(XWikiAttachmentContent content) throws AttachmentContentStoreException {
     var s3Key = buildS3AttachmentVersionKey(content.getAttachment());
-    LOGGER.info("loadContent - {} from {}", content.getAttachment(), s3Key);
     try {
       try (var data = s3Client.getObject(builder -> builder
           .bucket(s3BucketFilebase)
           .key(s3Key))) {
         content.setContent(data);
       }
+      LOGGER.debug("loadContent - {} from {}", content.getAttachment(), s3Key);
     } catch (NoSuchKeyException e) {
+      LOGGER.info("loadContent - {} not found in {}", content.getAttachment(), s3Key);
       throw new AttachmentContentStoreException("Attachment content not found in S3: " + s3Key, e);
     } catch (S3Exception e) {
       throw new AttachmentContentStoreException(buildS3ErrorMessage(s3Key, e), e);
