@@ -23,6 +23,7 @@ import com.xpn.xwiki.XWikiException;
 import com.xpn.xwiki.doc.XWikiAttachment;
 import com.xpn.xwiki.store.AttachmentContentStore.AttachmentContentStoreException;
 import com.xpn.xwiki.store.AttachmentVersioningStore;
+import com.xpn.xwiki.store.hibernate.HibernateAttachmentContentStore;
 
 import one.util.streamex.StreamEx;
 
@@ -33,7 +34,8 @@ public class S3AttachmentContentMigrationService {
   static final Logger LOGGER = LoggerFactory.getLogger(S3AttachmentContentMigrationService.class);
 
   private final QueryExecutionService queryExecutor;
-  private final S3AttachmentContentStore s3AttStore;
+  private final S3AttachmentContentStore s3AttContentStore;
+  private final HibernateAttachmentContentStore hibAttContentStore;
   private final IModelAccessFacade modelAccess;
   private final ModelUtils modelUtils;
   private final XWikiProvider xwikiProvider;
@@ -41,69 +43,67 @@ public class S3AttachmentContentMigrationService {
   @Inject
   public S3AttachmentContentMigrationService(
       QueryExecutionService queryExecutor,
-      S3AttachmentContentStore s3AttStore,
+      S3AttachmentContentStore s3AttContentStore,
+      HibernateAttachmentContentStore hibAttContentStore,
       IModelAccessFacade modelAccess,
       ModelUtils modelUtils,
       XWikiProvider xwikiProvider) {
     this.queryExecutor = queryExecutor;
-    this.s3AttStore = s3AttStore;
+    this.s3AttContentStore = s3AttContentStore;
+    this.hibAttContentStore = hibAttContentStore;
     this.modelAccess = modelAccess;
     this.modelUtils = modelUtils;
     this.xwikiProvider = xwikiProvider;
   }
 
-  public void migrate(WikiReference wiki) throws XWikiException, AttachmentContentStoreException {
-    migrateArchive(wiki);
+  public void migrate(WikiReference wiki, boolean cleanup)
+      throws XWikiException, AttachmentContentStoreException {
+    migrateArchive(wiki, cleanup);
     // migrateRecycleBin(wiki); // TODO implement xwikiattrecyclebin migration
   }
 
-  public void migrateArchive(WikiReference wiki)
+  private static final String SQL_ATTACHMENTS_WITH_CONTENT = ""
+      + "SELECT DISTINCT d.XWD_FULLNAME, a.XWA_FILENAME "
+      + "FROM xwikidoc d "
+      + "JOIN xwikiattachment a ON d.XWD_ID = a.XWA_DOC_ID "
+      + "JOIN xwikiattachment_content c ON a.XWA_ID = c.XWA_ID";
+
+  public void migrateArchive(WikiReference wiki, boolean cleanup)
       throws XWikiException, AttachmentContentStoreException {
-    var result = queryExecutor.executeReadSql(wiki, String.class, getSqlAttachmentsWithContent());
+    var result = queryExecutor.executeReadSql(wiki, String.class, SQL_ATTACHMENTS_WITH_CONTENT);
     LOGGER.info("[{}] migrating {} attachments to S3 store", wiki.getName(), result.size());
-    var count = 0;
-    var countContents = 0;
-    var processed = 0;
+    var countPushed = 0;
+    var countProcessed = 0;
+    var countCleaned = 0;
+    var countError = 0;
     for (List<String> row : result) {
       var docRef = modelUtils.resolveRef(row.get(0), DocumentReference.class, wiki);
       var fileName = row.get(1);
       var att = modelAccess.getOrCreateDocument(docRef).getAttachment(fileName);
       if (att != null) {
         try {
-          countContents += migrate(att);
-          count++;
+          countPushed += migrate(att);
+          if (cleanup) {
+            cleanup(att); // content moved to s3, cleanup content in db
+            countCleaned++;
+          }
         } catch (XWikiException exc) {
-          LOGGER.warn("[{}] failed migrating attachment: {}",
-              wiki.getName(), serialize(docRef) + "@" + fileName, exc);
+          countError++;
+          LOGGER.error("[{}] failed migrating {}", wiki.getName(),
+              serialize(att.getAttachmentReference()), exc);
         }
       }
-      processed++;
-      if ((processed % 100) == 0) {
-        LOGGER.debug("[{}] processed {}/{} attachments", wiki.getName(), processed, result.size());
+      countProcessed++;
+      if ((countProcessed % 100) == 0) {
+        LOGGER.info("[{}] processed {}/{} attachments",
+            wiki.getName(), countProcessed, result.size());
       }
     }
-    LOGGER.info("[{}] migrated {} attachments with {} contents to S3 store",
-        wiki.getName(), count, countContents);
+    LOGGER.info("[{}] migration finished: {} processed, {} failed, {} cleaned, {} pushed contents",
+        wiki.getName(), countProcessed, countError, countPushed, countCleaned);
   }
 
-  private static String getSqlAttachmentsWithContent() {
-    return "SELECT DISTINCT d.XWD_FULLNAME, a.XWA_FILENAME "
-        + "FROM xwikidoc d "
-        + "JOIN xwikiattachment a ON d.XWD_ID = a.XWA_DOC_ID "
-        + "JOIN xwikiattachment_content c ON a.XWA_ID = c.XWA_ID";
-  }
-
-  public int migrate(XWikiAttachment att) throws XWikiException, AttachmentContentStoreException {
-    var count = migrateArchive(att);
-    if (count > 0) { // content moved to s3, let's rebuild the archive without content blobs
-      var archive = att.loadArchive();
-      archive.rebuildArchive(false);
-      getAttachmentVersioningStore().saveArchive(archive, true);
-    }
-    return count;
-  }
-
-  public int migrateArchive(XWikiAttachment att)
+  public int migrate(XWikiAttachment att)
       throws XWikiException, AttachmentContentStoreException {
     var count = 0;
     var archive = att.loadArchive();
@@ -126,14 +126,33 @@ public class S3AttachmentContentMigrationService {
 
   private boolean pushToS3(XWikiAttachment att)
       throws XWikiException, AttachmentContentStoreException {
-    if (!s3AttStore.hasContent(att)) {
+    if (!s3AttContentStore.hasContent(att)) {
       LOGGER.trace("[{}] pushToS3 {}",
           defer(() -> att.getWikiReference().getName()),
-          defer(() -> s3AttStore.buildS3AttachmentVersionKey(att)));
-      s3AttStore.saveContent(att.loadContent());
+          defer(() -> s3AttContentStore.buildS3AttachmentVersionKey(att)));
+      s3AttContentStore.saveContent(att.loadContent());
       return true;
     }
     return false;
+  }
+
+  // let's rebuild the archive without content blobs and delete the content
+  public void cleanup(XWikiAttachment att) throws XWikiException {
+    LOGGER.trace("[{}] cleanup {}",
+        defer(() -> att.getWikiReference().getName()),
+        defer(() -> serialize(att.getAttachmentReference())));
+    hibAttContentStore.executeWrite(att.getWikiReference(), true, session -> {
+      try {
+        var archive = att.loadArchive();
+        archive.rebuildArchive(false);
+        getAttachmentVersioningStore().saveArchive(archive, false);
+        hibAttContentStore.deleteContent(att);
+      } catch (AttachmentContentStoreException e) {
+        throw new XWikiException(0, 0, "Failed deleting content from fallback store for " +
+            serialize(att.getAttachmentReference()), e);
+      }
+      return null;
+    });
   }
 
   private String serialize(EntityReference ref) {
