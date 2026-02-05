@@ -21,6 +21,7 @@ import com.celements.query.QueryExecutionService;
 import com.celements.store.s3.att.S3AttachmentContentStore;
 import com.xpn.xwiki.XWikiException;
 import com.xpn.xwiki.doc.XWikiAttachment;
+import com.xpn.xwiki.doc.XWikiDocument;
 import com.xpn.xwiki.store.AttachmentContentStore.AttachmentContentStoreException;
 import com.xpn.xwiki.store.AttachmentVersioningStore;
 import com.xpn.xwiki.store.hibernate.HibernateAttachmentContentStore;
@@ -66,7 +67,8 @@ public class S3AttachmentContentMigrationService {
       + "SELECT DISTINCT d.XWD_FULLNAME, a.XWA_FILENAME "
       + "FROM xwikidoc d "
       + "JOIN xwikiattachment a ON d.XWD_ID = a.XWA_DOC_ID "
-      + "JOIN xwikiattachment_content c ON a.XWA_ID = c.XWA_ID";
+      + "JOIN xwikiattachment_content c ON a.XWA_ID = c.XWA_ID "
+      + "ORDER BY d.XWD_FULLNAME, a.XWA_FILENAME";
 
   public void migrateArchive(WikiReference wiki, boolean cleanup)
       throws XWikiException, AttachmentContentStoreException {
@@ -76,10 +78,13 @@ public class S3AttachmentContentMigrationService {
     var countProcessed = 0;
     var countCleaned = 0;
     var countError = 0;
+    XWikiDocument doc = null;
     for (List<String> row : result) {
       var docRef = modelUtils.resolveRef(row.get(0), DocumentReference.class, wiki);
-      var fileName = row.get(1);
-      var att = modelAccess.getOrCreateDocument(docRef).getAttachment(fileName);
+      if ((doc == null) || !doc.getDocumentReference().equals(docRef)) {
+        doc = modelAccess.getOrCreateDocument(docRef);
+      }
+      var att = doc.getAttachment(row.get(1));
       if (att != null) {
         try {
           countPushed += migrate(att);
@@ -100,7 +105,7 @@ public class S3AttachmentContentMigrationService {
       }
     }
     LOGGER.info("[{}] migration finished: {} processed, {} failed, {} cleaned, {} pushed contents",
-        wiki.getName(), countProcessed, countError, countPushed, countCleaned);
+        wiki.getName(), countProcessed, countError, countCleaned, countPushed);
   }
 
   public int migrate(XWikiAttachment att)

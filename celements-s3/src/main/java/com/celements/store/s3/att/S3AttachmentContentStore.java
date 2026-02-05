@@ -80,7 +80,7 @@ public class S3AttachmentContentStore implements AttachmentContentStore {
 
   public boolean hasContent(XWikiAttachment attachment) throws AttachmentContentStoreException {
     var s3Key = buildS3AttachmentVersionKey(attachment);
-    LOGGER.debug("hasContent - {} in {}", attachment, s3Key);
+    LOGGER.debug("hasContent - {} : {}", s3Key, attachment);
     try {
       s3Client.headObject(builder -> builder
           .bucket(s3BucketFilebase)
@@ -98,7 +98,7 @@ public class S3AttachmentContentStore implements AttachmentContentStore {
   @Override
   public void saveContent(XWikiAttachmentContent content) throws AttachmentContentStoreException {
     var s3Key = buildS3AttachmentVersionKey(content.getAttachment());
-    LOGGER.info("saveContent - {} to {}", content.getAttachment(), s3Key);
+    LOGGER.info("saveContent - {} : {}", s3Key, content.getAttachment());
     try {
       try (var data = content.getContentInputStream()) {
         s3Client.putObject(builder -> builder
@@ -124,9 +124,9 @@ public class S3AttachmentContentStore implements AttachmentContentStore {
           .key(s3Key))) {
         content.setContent(data);
       }
-      LOGGER.debug("loadContent - {} from {}", content.getAttachment(), s3Key);
+      LOGGER.debug("loadContent - {} : {}", s3Key, content.getAttachment());
     } catch (NoSuchKeyException e) {
-      LOGGER.info("loadContent - {} not found in {}", content.getAttachment(), s3Key);
+      LOGGER.debug("loadContent - {} not found : {}", s3Key, content.getAttachment());
       throw new AttachmentContentStoreException("Attachment content not found in S3: " + s3Key, e);
     } catch (S3Exception e) {
       throw new AttachmentContentStoreException(buildS3ErrorMessage(s3Key, e), e);
@@ -138,7 +138,7 @@ public class S3AttachmentContentStore implements AttachmentContentStore {
   @Override
   public void deleteContent(XWikiAttachment attachment) throws AttachmentContentStoreException {
     var s3Prefix = buildS3AttachmentKey(attachment) + "/";
-    LOGGER.info("deleteContent - {} from {}", attachment, s3Prefix);
+    LOGGER.info("deleteContent - {} : {}", s3Prefix, attachment);
     List<ObjectIdentifier> batch = s3Client.listObjectsV2(builder -> builder
         .bucket(s3BucketFilebase)
         .prefix(s3Prefix))
@@ -160,7 +160,7 @@ public class S3AttachmentContentStore implements AttachmentContentStore {
   @Override
   public void deleteContent(XWikiAttachmentContent content) throws AttachmentContentStoreException {
     var s3Key = buildS3AttachmentVersionKey(content.getAttachment());
-    LOGGER.info("deleteContent - {} from {}", content.getAttachment(), s3Key);
+    LOGGER.info("deleteContent - {} : {}", s3Key, content.getAttachment());
     try {
       s3Client.deleteObject(builder -> builder
           .bucket(s3BucketFilebase)
