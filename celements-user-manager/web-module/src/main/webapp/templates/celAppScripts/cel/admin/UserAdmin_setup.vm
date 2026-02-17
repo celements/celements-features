@@ -1,9 +1,11 @@
 #if($services.rightsAccess.isLoggedIn())
-#if($isAdmin)
-#set($overwriteLayoutRef = $services.reference.create().space("UserAdmin").build())
+  #if($isAdmin)
+    #set($overwriteLayoutRef = $services.reference.create().space("UserAdmin").build())
+  #else
+    #set($userDocRef = $services.reference.resolveDocRef(${context.getUser()}))
+    #set($url = $services.url.getURL($userDocRef, 'edit', 'xredirect=%2Fapp%2Fcel%2Fadmin%2FUserAdmin'))
+    $response.sendRedirect($url)
+  #end
 #else
-#set($overwriteRenderDocument = 'celInlineTemplates/accessdenied.vm')
-#end
-#else
-#set($overwriteRenderDocument = 'celInlineTemplates/login.vm')
+  #set($overwriteRenderDocument = 'celInlineTemplates/login.vm')
 #end
