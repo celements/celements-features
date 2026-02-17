@@ -14,6 +14,7 @@
   display: flex;
   flex-flow: column;
   margin: 0px 2%;
+  max-width: 1536px;
 }
 #userAdmin  *,
 #userAdminEdit *{
@@ -57,6 +58,9 @@
   text-transform: uppercase;
   font-weight: 600;
   margin: 0px;
+}
+#cell\:celements2web\.\.UserAdmin\.subtitleSearch {
+  display: none;
 }
 #userAdmin li,
 #userAdmin a,
