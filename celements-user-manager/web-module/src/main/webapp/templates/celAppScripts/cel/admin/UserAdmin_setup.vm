@@ -3,7 +3,7 @@
     #set($overwriteLayoutRef = $services.reference.create().space("UserAdmin").build())
   #else
     #set($userDocRef = $services.reference.resolveDocRef(${context.getUser()}))
-    #set($url = $services.url.getURL($userDocRef, 'edit', 'xredirect=%2Fapp%2Fcel%2Fadmin%2FUserAdmin'))
+    #set($url = $services.url.getURL($userDocRef, 'edit', 'xredirect=/'))
     $response.sendRedirect($url)
   #end
 #else
