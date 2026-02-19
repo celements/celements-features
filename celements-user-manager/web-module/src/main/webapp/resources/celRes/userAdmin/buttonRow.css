@@ -11,19 +11,27 @@
 }
 
 #userAdminActionRow .actionButtonLarge a {
-  align-content: center;
   text-decoration: none;
+  display: flex;
+  flex-flow: row;
+  align-items: center;
+  gap: 7px;
+  color: black;
+}
+
+#userAdminActionRow .actionButtonLarge a:hover {
+  color: var(--accent-color);
 }
 
 #userAdminActionRow .actionButtonLarge a i {
-  width: 30px;
-  height: 30px;
+  width: 26px;
+  height: 26px;
   align-content: center;
   text-align: center;
-  border-radius: 20px;
+  border-radius: 13px;
   border: 2px solid var(--accent-color);
   color: var(--accent-color);
-  font-size: 20px;
+  font-size: 18px;
 }
 
 #userAdminActionRow .actionButtonLarge a:hover i {
