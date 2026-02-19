@@ -92,6 +92,10 @@
 #searchoutput .struct_table .column_sendMail a.icon-link:hover {
   color: var(--accent-color);
 }
+#searchoutput .struct_table .column_delete a.icon-link.disabled {
+  pointer-events: none;
+  color: gray;
+}
 #searchoutput .struct_table ul li.struct_table_row .editContentRTE {
 	display: flex;
   flex-flow: column;
