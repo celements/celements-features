@@ -1,0 +1,10 @@
+#set($iconDeleteCssClass = "fa-solid fa-trash-can")
+#set($xredirect = "/app/cel/admin/UserAdmin")
+#set($xcancel = "/app/cel/admin/UserAdmin")
+#set($userDocRef = $services.reference.resolveDocRef(${context.getUser()}))
+#if($userDocRef == $doc.getDocumentReference())
+  #set($isDisabled = true)
+#else
+  #set($isDisabled = false)
+#end
+#parse('celStruct/table/col_delete.vm')
