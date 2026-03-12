@@ -27,9 +27,6 @@
   width: 100%;
   gap: 5px;
 }
-#userEditForm .formWrapper .inputWrapper:has(#emailReadonly.isAdmin) {
-  display: none;
-}
 #userEditForm #actSuspWrapper{
   display: flex;
   flex-flow: row;
@@ -45,6 +42,10 @@
   flex-flow: row;
   flex: 0 0 200px;
   gap: 8px;
+}
+#userEditForm .formWrapper .inputWrapper input:read-only {
+  color: darkgray;
+  pointer-events: none;
 }
 #userEditForm .checkboxWrapper input[type="checkbox"] {
   appearance: none;

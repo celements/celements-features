@@ -5,4 +5,4 @@
   #set($objNb = -1)
 #end
 <label for="email">$adminMsg.get("XWiki.XWikiUsers_email")</label>
-<input id="email" #if($isAdmin) name="XWiki.XWikiUsers_$!{objNb}_email" #else disabled #end type="text" value="$!currentUser.getProperty('email').getValue()">
+<input id="email" name="XWiki.XWikiUsers_$!{objNb}_email" #if(!$isAdmin) readonly #end type="text" value="$!currentUser.getProperty('email').getValue()">
