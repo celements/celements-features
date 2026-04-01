@@ -4,7 +4,7 @@
   <parent>
     <groupId>com.celements</groupId>
     <artifactId>celements</artifactId>
-    <version>7.0-SNAPSHOT</version>
+    <version>7.0</version>
   </parent>
   <artifactId>celements-mailsender</artifactId>
   <version>7.0-SNAPSHOT</version>
