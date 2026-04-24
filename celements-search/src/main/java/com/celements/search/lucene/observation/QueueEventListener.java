@@ -15,15 +15,15 @@ import org.xwiki.model.reference.DocumentReference;
 import org.xwiki.model.reference.EntityReference;
 import org.xwiki.model.reference.WikiReference;
 import org.xwiki.observation.event.Event;
+import org.xwiki.observation.remote.RemoteObservationManagerContext;
 
 import com.celements.common.observation.listener.AbstractRemoteEventListener;
+import com.celements.init.XWikiProvider;
 import com.celements.model.access.exception.DocumentNotExistsException;
 import com.celements.model.util.ModelUtils;
-import com.celements.model.util.References;
 import com.celements.search.lucene.observation.event.LuceneQueueDeleteEvent;
 import com.celements.search.lucene.observation.event.LuceneQueueEvent;
 import com.celements.search.lucene.observation.event.LuceneQueueIndexEvent;
-import com.google.common.collect.ImmutableList;
 import com.xpn.xwiki.doc.XWikiAttachment;
 import com.xpn.xwiki.doc.XWikiDocument;
 import com.xpn.xwiki.plugin.lucene.AbstractIndexData;
@@ -42,6 +42,12 @@ public class QueueEventListener
   @Requirement
   private ModelUtils modelUtils;
 
+  @Requirement
+  private RemoteObservationManagerContext remoteObsManagerCtx;
+
+  @Requirement
+  private XWikiProvider xwikiProvider;
+
   @Override
   public String getName() {
     return NAME;
@@ -49,7 +55,7 @@ public class QueueEventListener
 
   @Override
   public List<Event> getEvents() {
-    return ImmutableList.of(
+    return List.of(
         new LuceneQueueIndexEvent(),
         new LuceneQueueDeleteEvent());
   }
@@ -59,14 +65,14 @@ public class QueueEventListener
       LuceneQueueEvent.Data eventData) {
     LuceneQueueEvent queueEvent = (LuceneQueueEvent) event;
     AbstractIndexData indexData = null;
-    if (ref instanceof WikiReference) {
-      indexData = newWikiData((WikiReference) ref, queueEvent.isDelete());
+    if (ref instanceof WikiReference wikiRef) {
+      indexData = newWikiData(wikiRef, queueEvent.isDelete());
     } else if (queueEvent.isDelete()) {
       indexData = newDeleteData(ref);
-    } else if (ref instanceof DocumentReference) {
-      indexData = newDocumentData((DocumentReference) ref);
-    } else if (ref instanceof AttachmentReference) {
-      indexData = newAttachmentData((AttachmentReference) ref);
+    } else if (ref instanceof DocumentReference docRef) {
+      indexData = newDocumentData(docRef);
+    } else if (ref instanceof AttachmentReference attRef) {
+      indexData = newAttachmentData(attRef);
     } else {
       LOGGER.warn("unable to queue ref [{}]", defer(() -> modelUtils.serializeRef(ref)));
     }
@@ -76,13 +82,15 @@ public class QueueEventListener
   private void queue(AbstractIndexData indexData, LuceneQueueEvent.Data eventData) {
     if (indexData != null) {
       indexData.setPriority(eventData.priority);
-      indexData.setDisableObservationEventNotification(eventData.disableEventNotification);
-      if (isLucenePluginAvailable()) {
-        LOGGER.debug("queue: {}", indexData);
-        getLucenePlugin().queue(indexData);
-      } else {
-        LOGGER.warn("LucenePlugin not available, first request? [{}]", indexData);
-      }
+      boolean remote = remoteObsManagerCtx.isRemoteState();
+      // remote queue replay must be terminal, otherwise async Lucene completion can start a new
+      // local event cascade that broadcasts again.
+      boolean disableNotifications = eventData.disableEventNotification || remote;
+      indexData.setDisableObservationEventNotification(disableNotifications);
+      getLucenePlugin().ifPresent(plugin -> {
+        LOGGER.debug("queue: {}, remote={}", indexData, remote);
+        plugin.queue(indexData);
+      });
     }
   }
 
@@ -127,7 +135,7 @@ public class QueueEventListener
    */
   DeleteData newDeleteData(EntityReference ref) {
     final StringBuilder docId = new StringBuilder();
-    docId.append(modelUtils.serializeRef(References.extractRef(ref, EntityType.DOCUMENT).or(ref)));
+    docId.append(modelUtils.serializeRef(ref.extractRef(EntityType.DOCUMENT).orElse(ref)));
     tryCast(ref, DocumentReference.class).ifPresent(
         docRef -> docId.append('.').append(tryGetLang(docRef).orElse("default")));
     tryCast(ref, AttachmentReference.class).ifPresent(
@@ -141,17 +149,9 @@ public class QueueEventListener
         .filter(Optional::isPresent).map(Optional::get);
   }
 
-  private boolean isLucenePluginAvailable() {
-    try {
-      return (getLucenePlugin() != null);
-    } catch (NullPointerException npe) {
-      return false;
-    }
-  }
-
-  private LucenePlugin getLucenePlugin() {
-    return (LucenePlugin) context.getXWikiContext().getWiki().getPlugin(
-        "lucene", context.getXWikiContext());
+  private Optional<LucenePlugin> getLucenePlugin() {
+    return xwikiProvider.get().map(xwiki -> (LucenePlugin) xwiki
+        .getPlugin("lucene", context.getXWikiContext()));
   }
 
 }

@@ -1,16 +1,18 @@
 package com.celements.search.lucene.observation;
 
-import static com.celements.common.test.CelementsTestUtils.*;
 import static org.easymock.EasyMock.*;
 import static org.junit.Assert.*;
+
+import java.util.List;
 
 import org.junit.Before;
 import org.junit.Test;
 import org.xwiki.model.reference.AttachmentReference;
-import org.xwiki.model.reference.ImmutableDocumentReference;
+import org.xwiki.model.reference.DocumentReference;
 import org.xwiki.model.reference.SpaceReference;
 import org.xwiki.model.reference.WikiReference;
 import org.xwiki.observation.EventListener;
+import org.xwiki.observation.remote.RemoteObservationManagerContext;
 
 import com.celements.common.observation.listener.AbstractRemoteEventListener;
 import com.celements.common.test.AbstractComponentTest;
@@ -20,7 +22,7 @@ import com.celements.search.lucene.index.queue.IndexQueuePriority;
 import com.celements.search.lucene.observation.event.LuceneQueueDeleteEvent;
 import com.celements.search.lucene.observation.event.LuceneQueueEvent;
 import com.celements.search.lucene.observation.event.LuceneQueueIndexEvent;
-import com.google.common.collect.ImmutableList;
+import com.xpn.xwiki.XWiki;
 import com.xpn.xwiki.doc.XWikiAttachment;
 import com.xpn.xwiki.doc.XWikiDocument;
 import com.xpn.xwiki.plugin.lucene.AbstractIndexData;
@@ -35,13 +37,14 @@ public class QueueEventListenerTest extends AbstractComponentTest {
   @Before
   public void prepareTest() throws Exception {
     registerComponentMock(IModelAccessFacade.class);
+    registerComponentMock(RemoteObservationManagerContext.class);
     listener = (TestQueueEventListener) Utils.getComponent(EventListener.class,
         QueueEventListener.NAME);
-    expect(getWikiMock().getPlugin(eq("lucene"), same(getContext())))
+    expect(getMock(XWiki.class).getPlugin(eq("lucene"), same(getXContext())))
         .andReturn(createDefaultMock(LucenePlugin.class)).anyTimes();
-    doc = new XWikiDocument(new ImmutableDocumentReference("wiki", "space", "doc"));
+    doc = new XWikiDocument(new DocumentReference("wiki", "space", "doc"));
     doc.setLanguage("en");
-    expect(getWikiMock().getDocument(doc.getDocumentReference(), getContext()))
+    expect(getMock(XWiki.class).getDocument(doc.getDocumentReference(), getXContext()))
         .andReturn(doc).anyTimes();
   }
 
@@ -75,6 +78,24 @@ public class QueueEventListenerTest extends AbstractComponentTest {
   }
 
   @Test
+  public void test_onEvent_docRef_remoteDisablesEventNotification() throws Exception {
+    QueueLangDocumentReference langDocRef = new QueueLangDocumentReference(
+        doc.getDocumentReference(), doc.getLanguage());
+    expect(getMock(IModelAccessFacade.class)
+        .getDocument(doc.getDocumentReference(), doc.getLanguage()))
+            .andReturn(doc);
+    expectIndexData(listener.docDataMock, LuceneQueueEvent.Data.DEFAULT, true);
+
+    replayDefault();
+    listener.onEvent(new LuceneQueueIndexEvent(), langDocRef, null);
+    verifyDefault();
+
+    assertEquals(1, listener.allCapturedSize());
+    assertEquals(1, listener.docsIndex.size());
+    assertEquals(doc, listener.docsIndex.get(0));
+  }
+
+  @Test
   public void test_onEvent_docRef_otherEventData() throws Exception {
     QueueLangDocumentReference langDocRef = new QueueLangDocumentReference(
         doc.getDocumentReference(), doc.getLanguage());
@@ -93,7 +114,7 @@ public class QueueEventListenerTest extends AbstractComponentTest {
   }
 
   @Test
-  public void test_onEvent_docRef_delete() throws Exception {
+  public void test_onEvent_docRef_delete() {
     QueueLangDocumentReference langDocRef = new QueueLangDocumentReference(
         doc.getDocumentReference(), doc.getLanguage());
     expectIndexData(listener.deleteDataMock, LuceneQueueEvent.Data.DEFAULT);
@@ -108,7 +129,7 @@ public class QueueEventListenerTest extends AbstractComponentTest {
   }
 
   @Test
-  public void test_onEvent_docRef_delete_noLang() throws Exception {
+  public void test_onEvent_docRef_delete_noLang() {
     doc.setLanguage(null);
     QueueLangDocumentReference langDocRef = new QueueLangDocumentReference(
         doc.getDocumentReference(), doc.getLanguage());
@@ -124,12 +145,12 @@ public class QueueEventListenerTest extends AbstractComponentTest {
   }
 
   @Test
-  public void test_onEvent_attRef_otherEventData() throws Exception {
+  public void test_onEvent_attRef_otherEventData() {
     expect(getMock(IModelAccessFacade.class).getOrCreateDocument(doc.getDocumentReference()))
         .andReturn(doc);
     AttachmentReference attRef = new AttachmentReference("att.jpg", doc.getDocumentReference());
     XWikiAttachment att = new XWikiAttachment(doc, attRef.getName());
-    doc.setAttachmentList(ImmutableList.of(att));
+    doc.setAttachmentList(List.of(att));
     LuceneQueueEvent.Data data = new LuceneQueueEvent.Data(IndexQueuePriority.LOW, true);
     expectIndexData(listener.attDataMock, data);
 
@@ -143,12 +164,12 @@ public class QueueEventListenerTest extends AbstractComponentTest {
   }
 
   @Test
-  public void test_onEvent_attRef() throws Exception {
+  public void test_onEvent_attRef() {
     expect(getMock(IModelAccessFacade.class).getOrCreateDocument(doc.getDocumentReference()))
         .andReturn(doc);
     AttachmentReference attRef = new AttachmentReference("att.jpg", doc.getDocumentReference());
     XWikiAttachment att = new XWikiAttachment(doc, attRef.getName());
-    doc.setAttachmentList(ImmutableList.of(att));
+    doc.setAttachmentList(List.of(att));
     expectIndexData(listener.attDataMock, LuceneQueueEvent.Data.DEFAULT);
 
     replayDefault();
@@ -161,7 +182,7 @@ public class QueueEventListenerTest extends AbstractComponentTest {
   }
 
   @Test
-  public void test_onEvent_attRef_delete() throws Exception {
+  public void test_onEvent_attRef_delete() {
     AttachmentReference attRef = new AttachmentReference("att.jpg", doc.getDocumentReference());
     expectIndexData(listener.deleteDataMock, LuceneQueueEvent.Data.DEFAULT);
 
@@ -175,7 +196,7 @@ public class QueueEventListenerTest extends AbstractComponentTest {
   }
 
   @Test
-  public void test_onEvent_wikiRef() throws Exception {
+  public void test_onEvent_wikiRef() {
     WikiReference wikiRef = doc.getDocumentReference().getWikiReference();
     expectIndexData(listener.wikiDataMock, LuceneQueueEvent.Data.DEFAULT);
 
@@ -189,7 +210,7 @@ public class QueueEventListenerTest extends AbstractComponentTest {
   }
 
   @Test
-  public void test_onEvent_wikiRef_delete() throws Exception {
+  public void test_onEvent_wikiRef_delete() {
     WikiReference wikiRef = doc.getDocumentReference().getWikiReference();
     expectIndexData(listener.wikiDataMock, LuceneQueueEvent.Data.DEFAULT);
 
@@ -203,15 +224,24 @@ public class QueueEventListenerTest extends AbstractComponentTest {
   }
 
   private void expectIndexData(AbstractIndexData indexData, LuceneQueueEvent.Data data) {
+    expectIndexData(indexData, data, false);
+  }
+
+  private void expectIndexData(AbstractIndexData indexData, LuceneQueueEvent.Data data,
+      boolean remoteState) {
     getMock(LucenePlugin.class).queue(same(indexData));
     expect(indexData.setPriority(data.priority)).andReturn(indexData);
-    expect(indexData.setDisableObservationEventNotification(data.disableEventNotification))
-        .andReturn(indexData);
+    expect(getMock(RemoteObservationManagerContext.class).isRemoteState()).andReturn(remoteState)
+        .times(2);
+    expect(indexData.setDisableObservationEventNotification(
+        data.disableEventNotification || remoteState))
+            .andReturn(indexData);
   }
 
   @Test
-  public void test_onEvent_otherRef() throws Exception {
+  public void test_onEvent_otherRef() {
     SpaceReference ref = new SpaceReference("space", new WikiReference("wiki"));
+    expect(getMock(RemoteObservationManagerContext.class).isRemoteState()).andReturn(false);
 
     replayDefault();
     listener.onEvent(new LuceneQueueIndexEvent(), ref, null);
@@ -224,6 +254,7 @@ public class QueueEventListenerTest extends AbstractComponentTest {
         doc.getDocumentReference(), doc.getLanguage());
     expect(getMock(IModelAccessFacade.class).getDocument(doc.getDocumentReference(),
         doc.getLanguage())).andThrow(new DocumentNotExistsException(doc.getDocumentReference()));
+    expect(getMock(RemoteObservationManagerContext.class).isRemoteState()).andReturn(false);
 
     replayDefault();
     listener.onEvent(new LuceneQueueIndexEvent(), langDocRef, null);
