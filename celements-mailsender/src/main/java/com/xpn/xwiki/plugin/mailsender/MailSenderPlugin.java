@@ -37,20 +37,20 @@ import java.util.Properties;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import javax.activation.DataHandler;
-import javax.activation.DataSource;
-import javax.activation.FileDataSource;
-import javax.mail.BodyPart;
-import javax.mail.MessagingException;
-import javax.mail.Multipart;
-import javax.mail.SendFailedException;
-import javax.mail.Session;
-import javax.mail.Transport;
-import javax.mail.internet.AddressException;
-import javax.mail.internet.InternetAddress;
-import javax.mail.internet.MimeBodyPart;
-import javax.mail.internet.MimeMessage;
-import javax.mail.internet.MimeMultipart;
+import jakarta.activation.DataHandler;
+import jakarta.activation.DataSource;
+import jakarta.activation.FileDataSource;
+import jakarta.mail.BodyPart;
+import jakarta.mail.MessagingException;
+import jakarta.mail.Multipart;
+import jakarta.mail.SendFailedException;
+import jakarta.mail.Session;
+import jakarta.mail.Transport;
+import jakarta.mail.internet.AddressException;
+import jakarta.mail.internet.InternetAddress;
+import jakarta.mail.internet.MimeBodyPart;
+import jakarta.mail.internet.MimeMessage;
+import jakarta.mail.internet.MimeMultipart;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
@@ -323,15 +323,15 @@ public class MailSenderPlugin extends XWikiDefaultPlugin {
     message.setFrom(from);
 
     if (to != null) {
-      message.setRecipients(javax.mail.Message.RecipientType.TO, to);
+      message.setRecipients(jakarta.mail.Message.RecipientType.TO, to);
     }
 
     if (cc != null) {
-      message.setRecipients(javax.mail.Message.RecipientType.CC, cc);
+      message.setRecipients(jakarta.mail.Message.RecipientType.CC, cc);
     }
 
     if (bcc != null) {
-      message.setRecipients(javax.mail.Message.RecipientType.BCC, bcc);
+      message.setRecipients(jakarta.mail.Message.RecipientType.BCC, bcc);
     }
 
     message.setSubject(mail.getSubject(), EMAIL_ENCODING);
