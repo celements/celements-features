@@ -19,13 +19,15 @@
  */
 package com.celements.captcha;
 
+import static com.google.common.base.Strings.*;
+
 import java.io.IOException;
-import java.net.MalformedURLException;
-import java.net.URL;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.Optional;
 
-import org.codehaus.jackson.JsonParseException;
-import org.codehaus.jackson.map.JsonMappingException;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,13 +36,11 @@ import org.xwiki.component.annotation.Requirement;
 import org.xwiki.configuration.ConfigurationSource;
 
 import com.celements.model.context.ModelContext;
-import com.google.common.base.Strings;
-import com.xpn.xwiki.web.XWikiRequest;
 
 @Component("reCaptcha")
 public class ReCaptchaService implements CaptchaServiceRole {
 
-  private final Logger LOGGER = LoggerFactory.getLogger(this.getClass());
+  private static final Logger LOGGER = LoggerFactory.getLogger(ReCaptchaService.class);
 
   // Google ReCaptcha URL and params
   private static final String CFG_RECAPTCHA_VALIDATION_URL = "https://www.google.com/recaptcha/api/siteverify?";
@@ -57,33 +57,42 @@ public class ReCaptchaService implements CaptchaServiceRole {
   @Requirement
   private ConfigurationSource configSource;
 
+  private final ObjectMapper objectMapper = new ObjectMapper();
+
   @Override
   public Optional<ReCaptchaResponse> verify() {
+    return context.getRequestParam(CFG_FORM_FIELD_KEY)
+        .flatMap(captcha -> verify(captcha, getClientIp()));
+  }
+
+  @Override
+  public Optional<ReCaptchaResponse> verify(String captcha, String clientIp) {
     String secret = configSource.getProperty(CFG_KEY_RECAPTCHA_SECRET, "");
-    if (!Strings.isNullOrEmpty(secret) && context.getRequest().isPresent() && context
-        .getRequestParameter(CFG_FORM_FIELD_KEY).isPresent()) {
-      String urlString = CFG_RECAPTCHA_VALIDATION_URL
-          + CFG_RECAPTCHA_VALIDATION_URL_PARAM_CAPTCHA + context.getRequestParameter(
-              CFG_FORM_FIELD_KEY).get()
-          + CFG_RECAPTCHA_VALIDATION_URL_PARAM_CLIENTIP + getClientIp(context.getRequest().get())
-          + CFG_RECAPTCHA_VALIDATION_URL_PARAM_SECRET + secret;
-      try {
-        return Optional.ofNullable(new ObjectMapper().readValue(new URL(urlString),
-            ReCaptchaResponse.class));
-      } catch (MalformedURLException e) {
-        LOGGER.error("malformed URL [{}]", urlString, e);
-      } catch (JsonParseException | JsonMappingException je) {
-        LOGGER.error("failed mapping response json to ReCaptchaResponse", je);
-      } catch (IOException ioe) {
-        LOGGER.error("failed contacting reCAPTCHA endpoint [{}]", urlString, ioe);
-      }
+    if (isNullOrEmpty(secret) || isNullOrEmpty(captcha)) {
+      return Optional.empty();
+    }
+    String urlString = CFG_RECAPTCHA_VALIDATION_URL
+        + CFG_RECAPTCHA_VALIDATION_URL_PARAM_CAPTCHA + encode(captcha)
+        + CFG_RECAPTCHA_VALIDATION_URL_PARAM_CLIENTIP + encode(clientIp)
+        + CFG_RECAPTCHA_VALIDATION_URL_PARAM_SECRET + encode(secret);
+    try {
+      var url = new URI(urlString).toURL();
+      var response = objectMapper.readValue(url, ReCaptchaResponse.class);
+      return Optional.ofNullable(response);
+    } catch (URISyntaxException | IOException e) {
+      LOGGER.error("Error verifying reCaptcha response", e);
     }
     return Optional.empty();
   }
 
-  private String getClientIp(XWikiRequest request) {
+  private String getClientIp() {
+    var request = context.request().orElseThrow(IllegalStateException::new);
     String ip = request.getHeader("X-FORWARDED-FOR");
-    return Strings.isNullOrEmpty(ip) ? request.getRemoteAddr() : ip;
+    return isNullOrEmpty(ip) ? request.getRemoteAddr() : ip;
+  }
+
+  private String encode(String value) {
+    return URLEncoder.encode(nullToEmpty(value), StandardCharsets.UTF_8);
   }
 
 }

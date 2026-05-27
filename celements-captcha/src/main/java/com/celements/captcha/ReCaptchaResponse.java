@@ -26,7 +26,6 @@ import java.util.Map;
 
 import org.codehaus.jackson.annotate.JsonProperty;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 
 // {
@@ -77,7 +76,9 @@ public class ReCaptchaResponse {
 
   // ISO format yyyy-MM-dd'T'HH:mm:ssZZ
   public void setTimestamp(String timestamp) {
-    this.timestamp = DateTimeFormatter.ISO_INSTANT.parse(timestamp, Instant::from);
+    if (timestamp != null) {
+      this.timestamp = DateTimeFormatter.ISO_INSTANT.parse(timestamp, Instant::from);
+    }
   }
 
   public String getHostname() {
@@ -93,8 +94,6 @@ public class ReCaptchaResponse {
   }
 
   public void setErrorCodes(String[] errorCodes) {
-    this.errorCodes = ((errorCodes != null)
-        ? ImmutableList.copyOf(errorCodes)
-        : ImmutableList.of());
+    this.errorCodes = ((errorCodes != null) ? List.of(errorCodes) : List.of());
   }
 }

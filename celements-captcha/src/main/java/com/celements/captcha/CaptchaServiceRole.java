@@ -21,6 +21,8 @@ package com.celements.captcha;
 
 import java.util.Optional;
 
+import javax.annotation.Nullable;
+import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
 
 import org.xwiki.component.annotation.ComponentRole;
@@ -30,5 +32,8 @@ public interface CaptchaServiceRole {
 
   @NotNull
   Optional<ReCaptchaResponse> verify();
+
+  @NotNull
+  Optional<ReCaptchaResponse> verify(@NotEmpty String captcha, @Nullable String clientIp);
 
 }
