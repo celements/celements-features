@@ -30,8 +30,10 @@ public class XWikiAdminUserTest extends AbstractComponentTest {
 
   @Test
   public void testDependsOnMandatoryDocuments() throws Exception {
-    assertEquals(1, mandatory.dependsOnMandatoryDocuments().size());
+    assertEquals(2, mandatory.dependsOnMandatoryDocuments().size());
     assertEquals("celements.MandatoryGroups", mandatory.dependsOnMandatoryDocuments().get(0));
+    assertEquals(MandatoryDiskDocuments.class.getName(), mandatory.dependsOnMandatoryDocuments().get(
+        1));
   }
 
   @Test

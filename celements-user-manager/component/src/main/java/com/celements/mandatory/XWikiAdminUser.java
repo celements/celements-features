@@ -33,7 +33,9 @@ public class XWikiAdminUser extends AbstractMandatoryDocument {
 
   @Override
   public List<String> dependsOnMandatoryDocuments() {
-    return List.of("celements.MandatoryGroups");
+    return List.of(
+        "celements.MandatoryGroups", // Admin group must exist
+        MandatoryDiskDocuments.class.getName()); // Admin user must exist, XWiki/Admin.xml
   }
 
   @Override
