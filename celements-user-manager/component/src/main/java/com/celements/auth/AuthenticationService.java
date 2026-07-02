@@ -1,8 +1,11 @@
 package com.celements.auth;
 
-import java.util.Arrays;
+import static com.google.common.base.Predicates.*;
+
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 import org.apache.commons.lang.RandomStringUtils;
@@ -19,13 +22,14 @@ import com.celements.auth.user.User;
 import com.celements.auth.user.UserService;
 import com.celements.model.access.IModelAccessFacade;
 import com.celements.model.access.exception.DocumentAccessException;
+import com.celements.model.access.exception.DocumentSaveException;
 import com.celements.model.context.ModelContext;
+import com.celements.model.object.xwiki.XWikiObjectEditor;
 import com.celements.model.util.ModelUtils;
 import com.celements.rights.access.EAccessLevel;
 import com.celements.rights.access.IRightsAccessFacadeRole;
 import com.celements.web.classes.oldcore.XWikiUsersClass;
 import com.celements.web.plugin.cmd.UserNameForUserDataCommand;
-import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableSet;
 import com.xpn.xwiki.XWikiContext;
 import com.xpn.xwiki.XWikiException;
@@ -61,6 +65,10 @@ public class AuthenticationService implements IAuthenticationServiceRole {
     return context.getXWikiContext();
   }
 
+  public String getPasswordHash(String str) {
+    return getPasswordHash("hash:SHA-512:", str);
+  }
+
   @Override
   public String getPasswordHash(String encoding, String str) {
     return new PasswordClass().getEquivalentPassword(encoding, str);
@@ -71,17 +79,14 @@ public class AuthenticationService implements IAuthenticationServiceRole {
       throws AccountActivationFailedException {
     LOGGER.debug("activateAccount: for code '{}'", activationCode);
     try {
-      String hashedCode = getPasswordHash("hash:SHA-512:", activationCode);
-      Optional<User> user = userService.getUserForLoginField(hashedCode, Arrays.asList(
-          XWikiUsersClass.FIELD_VALID_KEY.getName()));
-      LOGGER.debug("activateAccount: user = {}", user.orNull());
+      String hashedCode = getPasswordHash(activationCode);
+      Optional<User> user = userService.getPossibleUserForLoginField(hashedCode,
+          List.of(XWikiUsersClass.FIELD_VALID_KEY.getName()))
+          .filter(not(User::isSuspended));
+      LOGGER.debug("activateAccount: user = {}", user);
       if (user.isPresent()) {
         String password = RandomStringUtils.randomAlphanumeric(24);
-        XWikiDocument userDoc = modelAccess.getDocument(user.get().getDocRef());
-        modelAccess.setProperty(userDoc, XWikiUsersClass.FIELD_ACTIVE, true);
-        modelAccess.setProperty(userDoc, XWikiUsersClass.FIELD_FORCE_PWD_CHANGE, true);
-        modelAccess.setProperty(userDoc, XWikiUsersClass.FIELD_PASSWORD, password);
-        modelAccess.saveDocument(userDoc, "activate account");
+        enableUser(user.get(), password, true);
         Map<String, String> userAccount = new HashMap<>();
         userAccount.put("username", modelUtils.serializeRefLocal(user.get().getDocRef()));
         userAccount.put("password", password);
@@ -92,6 +97,21 @@ public class AuthenticationService implements IAuthenticationServiceRole {
     } catch (DocumentAccessException exp) {
       throw new AccountActivationFailedException(exp);
     }
+  }
+
+  public boolean enableUser(User user, String password, boolean forceChange)
+      throws DocumentSaveException {
+    XWikiDocument userDoc = user.getDocument();
+    var editor = XWikiObjectEditor.on(userDoc).filter(XWikiUsersClass.CLASS_REF);
+    boolean changed = false;
+    changed |= editor.editField(XWikiUsersClass.FIELD_ACTIVE).first(true);
+    changed |= editor.editField(XWikiUsersClass.FIELD_FORCE_PWD_CHANGE).first(forceChange);
+    changed |= editor.editField(XWikiUsersClass.FIELD_PASSWORD).first(getPasswordHash(password));
+    if (changed) {
+      LOGGER.info("enabled user [{}]", user.getDocRef());
+      modelAccess.saveDocument(userDoc, "activate account");
+    }
+    return changed;
   }
 
   @Override
@@ -114,8 +134,9 @@ public class AuthenticationService implements IAuthenticationServiceRole {
   public boolean hasAccessLevel(String level, String userName, boolean isUser,
       DocumentReference docRef) throws XWikiException {
     XWikiUser user = new XWikiUser(userName);
-    Optional<EAccessLevel> right = EAccessLevel.getAccessLevel(level);
-    return right.isPresent() ? rightsAccess.hasAccessLevel(docRef, right.get(), user) : false;
+    return EAccessLevel.getAccessLevel(level).toJavaUtil()
+        .map(lvl -> rightsAccess.hasAccessLevel(docRef, lvl, user))
+        .orElse(false);
   }
 
   @Override
