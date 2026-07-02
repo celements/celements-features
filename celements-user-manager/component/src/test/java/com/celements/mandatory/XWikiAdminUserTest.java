@@ -18,7 +18,7 @@ import com.xpn.xwiki.objects.classes.BaseClass;
 
 public class XWikiAdminUserTest extends AbstractComponentTest {
 
-  private static final String CFG_KEY_ENABLED = "celements.mandatory.XWikiAdminUser.enabled";
+  private static final String CFG_KEY_ENABLED = "celements.mandatory.enabled.XWikiAdminUser";
 
   private XWikiAdminUser mandatory;
 
