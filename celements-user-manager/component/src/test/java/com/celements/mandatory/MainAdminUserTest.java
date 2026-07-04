@@ -76,12 +76,12 @@ public class MainAdminUserTest extends AbstractComponentTest {
   }
 
   @Test
-  public void testIsEnabled_enabledFlagWithoutPassword() throws Exception {
+  public void testIsEnabled_enabledFlagWithoutPassword_unconditionalOverride() throws Exception {
     getXContext().setDatabase("xwiki");
     getConfigurationSource().setProperty(CFG_KEY_ENABLED, "1");
 
     replayDefault();
-    assertFalse(mandatory.isEnabled());
+    assertTrue(mandatory.isEnabled());
     verifyDefault();
   }
 
