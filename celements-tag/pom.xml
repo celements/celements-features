@@ -67,6 +67,11 @@
     </dependency>
     <dependency>
       <groupId>com.celements</groupId>
+      <artifactId>celements-wiki-api</artifactId>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.celements</groupId>
       <artifactId>celements-xwiki-rendering-api</artifactId>
       <scope>provided</scope>
     </dependency>

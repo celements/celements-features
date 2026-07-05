@@ -165,7 +165,7 @@
     </dependency>
     <dependency>
       <groupId>com.celements</groupId>
-      <artifactId>celements-wiki-manager</artifactId>
+      <artifactId>celements-wiki-api</artifactId>
       <scope>provided</scope>
     </dependency>
     <dependency>
