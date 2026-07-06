@@ -3,7 +3,7 @@
 <web>UserAdminForm</web>
 <name>form</name>
 <language></language>
-<defaultLanguage>en</defaultLanguage>
+<defaultLanguage>de</defaultLanguage>
 <translation>0</translation>
 <parent></parent>
 <creator>xwiki:XWiki.msladek</creator>
@@ -147,6 +147,7 @@
 <form_field_send_data_encoded>
 <disabled>0</disabled>
 <displayFormType>select</displayFormType>
+<displayType>yesno</displayType>
 <name>form_field_send_data_encoded</name>
 <number>3</number>
 <prettyName>Send Data Encoded</prettyName>
@@ -209,6 +210,7 @@
 <multilingual>
 <disabled>0</disabled>
 <displayFormType>select</displayFormType>
+<displayType>yesno</displayType>
 <name>multilingual</name>
 <number>3</number>
 <prettyName>Multilingual</prettyName>

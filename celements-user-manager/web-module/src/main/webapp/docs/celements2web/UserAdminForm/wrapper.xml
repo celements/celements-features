@@ -3,7 +3,7 @@
 <web>UserAdminForm</web>
 <name>wrapper</name>
 <language></language>
-<defaultLanguage>en</defaultLanguage>
+<defaultLanguage>de</defaultLanguage>
 <translation>0</translation>
 <parent>UserAdminForm.form</parent>
 <creator>xwiki:XWiki.msladek</creator>
