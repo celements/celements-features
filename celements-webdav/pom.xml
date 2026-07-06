@@ -181,11 +181,6 @@
     </dependency>
     <dependency>
       <groupId>com.celements</groupId>
-      <artifactId>celements-wiki-manager</artifactId>
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <groupId>com.celements</groupId>
       <artifactId>celements-user-manager</artifactId>
       <scope>provided</scope>
     </dependency>
