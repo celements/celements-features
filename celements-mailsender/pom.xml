@@ -8,6 +8,7 @@
     <version>7.1-SNAPSHOT</version>
   </parent>
   <artifactId>celements-mailsender</artifactId>
+  <version>7.1-SNAPSHOT</version>
   <name>Celements Mail Sender</name>
   <repositories>
     <repository>
