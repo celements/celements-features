@@ -24,7 +24,7 @@ import com.celements.web.plugin.cmd.PossibleLoginsCommand;
 import com.celements.web.plugin.cmd.RemoteUserValidator;
 import com.celements.web.plugin.cmd.UserNameForUserDataCommand;
 import com.celements.web.token.NewCelementsTokenForUserCommand;
-import com.celements.wiki.service.WikiManagerService;
+import com.celements.wiki.WikiDescriptorService;
 import com.xpn.xwiki.XWiki;
 import com.xpn.xwiki.XWikiContext;
 import com.xpn.xwiki.XWikiException;
@@ -39,7 +39,7 @@ public class AuthenticationScriptService implements ScriptService {
   private final UserService userService;
   private final ConfigurationSource cfgSrc;
   private final ModelContext context;
-  private final WikiManagerService wikiManager;
+  private final WikiDescriptorService wikiManager;
 
   @Inject
   public AuthenticationScriptService(
@@ -47,7 +47,7 @@ public class AuthenticationScriptService implements ScriptService {
       UserService userService,
       ConfigurationSource cfgSrc,
       ModelContext context,
-      WikiManagerService wikiManager,
+      WikiDescriptorService wikiManager,
       ModelUtils modelUtils) {
     this.authenticationService = authenticationService;
     this.userService = userService;
