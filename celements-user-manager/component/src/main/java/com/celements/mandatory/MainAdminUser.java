@@ -1,5 +1,6 @@
 package com.celements.mandatory;
 
+import static com.celements.common.lambda.LambdaExceptionUtil.*;
 import static java.util.function.Predicate.*;
 
 import java.util.List;
@@ -10,15 +11,14 @@ import javax.inject.Inject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
+import org.xwiki.model.reference.ClassReference;
 import org.xwiki.model.reference.DocumentReference;
 
 import com.celements.auth.AuthenticationService;
 import com.celements.auth.user.UserInstantiationException;
 import com.celements.auth.user.UserService;
 import com.celements.model.access.exception.DocumentSaveException;
-import com.celements.model.object.xwiki.XWikiObjectEditor;
 import com.celements.model.reference.RefBuilder;
-import com.celements.web.classes.oldcore.XWikiGroupsClass;
 import com.xpn.xwiki.XWikiConstant;
 import com.xpn.xwiki.XWikiException;
 import com.xpn.xwiki.doc.XWikiDocument;
@@ -51,10 +51,7 @@ public class MainAdminUser extends AbstractMandatoryDocument {
 
   @Override
   protected DocumentReference getDocRef() {
-    return new RefBuilder().with(modelContext.getWikiRef())
-        .space(XWikiConstant.XWIKI_SPACE)
-        .doc("XWikiAdminGroup")
-        .build(DocumentReference.class);
+    return getAdminUserDocRef();
   }
 
   @Override
@@ -74,37 +71,20 @@ public class MainAdminUser extends AbstractMandatoryDocument {
 
   @Override
   protected boolean checkDocumentsMain(XWikiDocument doc) throws XWikiException {
-    getAdminPassword().ifPresent(this::enableAdminUser);
-    return addAdminUserToAdminGroup(doc);
+    try {
+      var adminUser = userService.getUser(getAdminUserDocRef());
+      getAdminPassword().ifPresent(rethrowConsumer(password -> authService
+          .enableUser(adminUser, password, false)));
+      userService.addUserToGroup(adminUser, getAdminGroupRef());
+      return false; // safe already handled
+    } catch (UserInstantiationException | DocumentSaveException exc) {
+      throw new XWikiException(0, 0, "Admin user document not found", exc);
+    }
   }
 
   Optional<String> getAdminPassword() {
     String password = xwikiPropConfigSource.getProperty(CFG_KEY_ADMIN_PASSWORD, "");
     return Optional.ofNullable(password).map(String::trim).filter(not(String::isEmpty));
-  }
-
-  boolean enableAdminUser(String password) {
-    var adminUserDocRef = getAdminUserDocRef();
-    try {
-      var adminUser = userService.getUser(getAdminUserDocRef());
-      return authService.enableUser(adminUser, password, false);
-    } catch (UserInstantiationException | DocumentSaveException exc) {
-      LOGGER.warn("cannot activate admin user [{}]", adminUserDocRef, exc);
-      return false;
-    }
-  }
-
-  boolean addAdminUserToAdminGroup(XWikiDocument groupDoc) {
-    var adminUserDocRef = getAdminUserDocRef();
-    var editor = XWikiObjectEditor.on(groupDoc)
-        .filter(XWikiGroupsClass.CLASS_REF)
-        .filter(XWikiGroupsClass.FIELD_MEMBER, adminUserDocRef);
-    if (editor.fetch().exists()) {
-      return false;
-    }
-    editor.createFirst();
-    LOGGER.info("added [{}] to [{}]", adminUserDocRef, groupDoc.getDocRef());
-    return true;
   }
 
   private DocumentReference getAdminUserDocRef() {
@@ -113,6 +93,10 @@ public class MainAdminUser extends AbstractMandatoryDocument {
         .space(XWikiConstant.XWIKI_SPACE)
         .doc(ADMIN_DOC_NAME)
         .build(DocumentReference.class);
+  }
+
+  private ClassReference getAdminGroupRef() {
+    return new ClassReference(XWikiConstant.XWIKI_SPACE, "XWikiAdminGroup");
   }
 
   @Override
