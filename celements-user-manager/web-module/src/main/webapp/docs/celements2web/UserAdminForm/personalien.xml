@@ -3,7 +3,7 @@
 <web>UserAdminForm</web>
 <name>personalien</name>
 <language></language>
-<defaultLanguage>en</defaultLanguage>
+<defaultLanguage>de</defaultLanguage>
 <translation>0</translation>
 <parent>UserAdminForm.wrapper</parent>
 <creator>xwiki:XWiki.msladek</creator>

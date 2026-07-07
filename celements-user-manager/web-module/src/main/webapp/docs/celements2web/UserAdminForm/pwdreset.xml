@@ -3,7 +3,7 @@
 <web>UserAdminForm</web>
 <name>pwdreset</name>
 <language></language>
-<defaultLanguage>en</defaultLanguage>
+<defaultLanguage>de</defaultLanguage>
 <translation>0</translation>
 <parent>UserAdminForm.pwdResetWrapper</parent>
 <creator>xwiki:XWiki.msladek</creator>
@@ -123,6 +123,7 @@
 <select_tag_is_bootstrap>
 <disabled>0</disabled>
 <displayFormType>select</displayFormType>
+<displayType>yesno</displayType>
 <name>select_tag_is_bootstrap</name>
 <number>2</number>
 <prettyName>Is Bootstrap</prettyName>
@@ -132,6 +133,7 @@
 <select_tag_is_multiselect>
 <disabled>0</disabled>
 <displayFormType>select</displayFormType>
+<displayType>yesno</displayType>
 <name>select_tag_is_multiselect</name>
 <number>3</number>
 <prettyName>Is Multiselect</prettyName>
@@ -200,6 +202,7 @@
 <multilingual>
 <disabled>0</disabled>
 <displayFormType>select</displayFormType>
+<displayType>yesno</displayType>
 <name>multilingual</name>
 <number>3</number>
 <prettyName>Multilingual</prettyName>

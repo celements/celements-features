@@ -7,18 +7,18 @@
 <translation>0</translation>
 <parent></parent>
 <creator>xwiki:XWiki.fpichler</creator>
-<author>xwiki:XWiki.fpichler</author>
+<author>xwiki:XWiki.msladek</author>
 <customClass></customClass>
-<contentAuthor>xwiki:XWiki.fpichler</contentAuthor>
+<contentAuthor>xwiki:XWiki.msladek</contentAuthor>
 <creationDate>1295421347000</creationDate>
-<date>1355768543000</date>
-<contentUpdateDate>1355768543000</contentUpdateDate>
+<date>1667872051000</date>
+<contentUpdateDate>1667872051000</contentUpdateDate>
 <version>1.1</version>
 <title></title>
 <template></template>
 <defaultTemplate></defaultTemplate>
 <validationScript></validationScript>
-<comment>Imported from XAR</comment>
+<comment>Aus XAR importiert</comment>
 <minorEdit>false</minorEdit>
 <syntaxId>xwiki/1.0</syntaxId>
 <hidden>false</hidden>
@@ -33,22 +33,34 @@
 <nameField></nameField>
 <validationScript></validationScript>
 <cmi_icon>
+<customDisplay></customDisplay>
 <disabled>0</disabled>
 <name>cmi_icon</name>
 <number>3</number>
-<prettyName>optional CMItem icon</prettyName>
+<picker>0</picker>
+<prettyName>cmi_icon</prettyName>
 <size>30</size>
+<tooltip></tooltip>
 <unmodifiable>0</unmodifiable>
+<validationMessage></validationMessage>
+<validationRegExp></validationRegExp>
 <classType>com.xpn.xwiki.objects.classes.StringClass</classType>
 </cmi_icon>
 <cmi_link>
+<contenttype>FullyRenderedText</contenttype>
+<customDisplay></customDisplay>
 <disabled>0</disabled>
+<editor>---</editor>
 <name>cmi_link</name>
 <number>1</number>
-<prettyName>CMItem Link (velocity code)</prettyName>
+<picker>0</picker>
+<prettyName>cmi_link</prettyName>
 <rows>20</rows>
 <size>80</size>
+<tooltip></tooltip>
 <unmodifiable>0</unmodifiable>
+<validationMessage></validationMessage>
+<validationRegExp></validationRegExp>
 <classType>com.xpn.xwiki.objects.classes.TextAreaClass</classType>
 </cmi_link>
 <cmi_shortcut>
@@ -61,12 +73,17 @@
 <classType>com.xpn.xwiki.objects.classes.StringClass</classType>
 </cmi_shortcut>
 <cmi_text>
+<customDisplay></customDisplay>
 <disabled>0</disabled>
 <name>cmi_text</name>
 <number>2</number>
-<prettyName>CMItem Link Name</prettyName>
+<picker>0</picker>
+<prettyName>cmi_text</prettyName>
 <size>30</size>
+<tooltip></tooltip>
 <unmodifiable>0</unmodifiable>
+<validationMessage></validationMessage>
+<validationRegExp></validationRegExp>
 <classType>com.xpn.xwiki.objects.classes.StringClass</classType>
 </cmi_text>
 </class>
@@ -103,22 +120,34 @@ window.location.href=&amp;quot;${cmenu_pageLink}&amp;quot;##
 <nameField></nameField>
 <validationScript></validationScript>
 <cmi_icon>
+<customDisplay></customDisplay>
 <disabled>0</disabled>
 <name>cmi_icon</name>
 <number>3</number>
-<prettyName>optional CMItem icon</prettyName>
+<picker>0</picker>
+<prettyName>cmi_icon</prettyName>
 <size>30</size>
+<tooltip></tooltip>
 <unmodifiable>0</unmodifiable>
+<validationMessage></validationMessage>
+<validationRegExp></validationRegExp>
 <classType>com.xpn.xwiki.objects.classes.StringClass</classType>
 </cmi_icon>
 <cmi_link>
+<contenttype>FullyRenderedText</contenttype>
+<customDisplay></customDisplay>
 <disabled>0</disabled>
+<editor>---</editor>
 <name>cmi_link</name>
 <number>1</number>
-<prettyName>CMItem Link (velocity code)</prettyName>
+<picker>0</picker>
+<prettyName>cmi_link</prettyName>
 <rows>20</rows>
 <size>80</size>
+<tooltip></tooltip>
 <unmodifiable>0</unmodifiable>
+<validationMessage></validationMessage>
+<validationRegExp></validationRegExp>
 <classType>com.xpn.xwiki.objects.classes.TextAreaClass</classType>
 </cmi_link>
 <cmi_shortcut>
@@ -131,12 +160,17 @@ window.location.href=&amp;quot;${cmenu_pageLink}&amp;quot;##
 <classType>com.xpn.xwiki.objects.classes.StringClass</classType>
 </cmi_shortcut>
 <cmi_text>
+<customDisplay></customDisplay>
 <disabled>0</disabled>
 <name>cmi_text</name>
 <number>2</number>
-<prettyName>CMItem Link Name</prettyName>
+<picker>0</picker>
+<prettyName>cmi_text</prettyName>
 <size>30</size>
+<tooltip></tooltip>
 <unmodifiable>0</unmodifiable>
+<validationMessage></validationMessage>
+<validationRegExp></validationRegExp>
 <classType>com.xpn.xwiki.objects.classes.StringClass</classType>
 </cmi_text>
 </class>
@@ -184,22 +218,34 @@ window.location.href=&amp;quot;${cmenu_pageLink}&amp;quot;</cmi_link>
 <nameField></nameField>
 <validationScript></validationScript>
 <cmi_icon>
+<customDisplay></customDisplay>
 <disabled>0</disabled>
 <name>cmi_icon</name>
 <number>3</number>
-<prettyName>optional CMItem icon</prettyName>
+<picker>0</picker>
+<prettyName>cmi_icon</prettyName>
 <size>30</size>
+<tooltip></tooltip>
 <unmodifiable>0</unmodifiable>
+<validationMessage></validationMessage>
+<validationRegExp></validationRegExp>
 <classType>com.xpn.xwiki.objects.classes.StringClass</classType>
 </cmi_icon>
 <cmi_link>
+<contenttype>FullyRenderedText</contenttype>
+<customDisplay></customDisplay>
 <disabled>0</disabled>
+<editor>---</editor>
 <name>cmi_link</name>
 <number>1</number>
-<prettyName>CMItem Link (velocity code)</prettyName>
+<picker>0</picker>
+<prettyName>cmi_link</prettyName>
 <rows>20</rows>
 <size>80</size>
+<tooltip></tooltip>
 <unmodifiable>0</unmodifiable>
+<validationMessage></validationMessage>
+<validationRegExp></validationRegExp>
 <classType>com.xpn.xwiki.objects.classes.TextAreaClass</classType>
 </cmi_link>
 <cmi_shortcut>
@@ -212,12 +258,17 @@ window.location.href=&amp;quot;${cmenu_pageLink}&amp;quot;</cmi_link>
 <classType>com.xpn.xwiki.objects.classes.StringClass</classType>
 </cmi_shortcut>
 <cmi_text>
+<customDisplay></customDisplay>
 <disabled>0</disabled>
 <name>cmi_text</name>
 <number>2</number>
-<prettyName>CMItem Link Name</prettyName>
+<picker>0</picker>
+<prettyName>cmi_text</prettyName>
 <size>30</size>
+<tooltip></tooltip>
 <unmodifiable>0</unmodifiable>
+<validationMessage></validationMessage>
+<validationRegExp></validationRegExp>
 <classType>com.xpn.xwiki.objects.classes.StringClass</classType>
 </cmi_text>
 </class>
@@ -260,22 +311,34 @@ window.location.href=&amp;quot;${cmenu_pageLink}&amp;quot;##
 <nameField></nameField>
 <validationScript></validationScript>
 <cmi_icon>
+<customDisplay></customDisplay>
 <disabled>0</disabled>
 <name>cmi_icon</name>
 <number>3</number>
-<prettyName>optional CMItem icon</prettyName>
+<picker>0</picker>
+<prettyName>cmi_icon</prettyName>
 <size>30</size>
+<tooltip></tooltip>
 <unmodifiable>0</unmodifiable>
+<validationMessage></validationMessage>
+<validationRegExp></validationRegExp>
 <classType>com.xpn.xwiki.objects.classes.StringClass</classType>
 </cmi_icon>
 <cmi_link>
+<contenttype>FullyRenderedText</contenttype>
+<customDisplay></customDisplay>
 <disabled>0</disabled>
+<editor>---</editor>
 <name>cmi_link</name>
 <number>1</number>
-<prettyName>CMItem Link (velocity code)</prettyName>
+<picker>0</picker>
+<prettyName>cmi_link</prettyName>
 <rows>20</rows>
 <size>80</size>
+<tooltip></tooltip>
 <unmodifiable>0</unmodifiable>
+<validationMessage></validationMessage>
+<validationRegExp></validationRegExp>
 <classType>com.xpn.xwiki.objects.classes.TextAreaClass</classType>
 </cmi_link>
 <cmi_shortcut>
@@ -288,12 +351,17 @@ window.location.href=&amp;quot;${cmenu_pageLink}&amp;quot;##
 <classType>com.xpn.xwiki.objects.classes.StringClass</classType>
 </cmi_shortcut>
 <cmi_text>
+<customDisplay></customDisplay>
 <disabled>0</disabled>
 <name>cmi_text</name>
 <number>2</number>
-<prettyName>CMItem Link Name</prettyName>
+<picker>0</picker>
+<prettyName>cmi_text</prettyName>
 <size>30</size>
+<tooltip></tooltip>
 <unmodifiable>0</unmodifiable>
+<validationMessage></validationMessage>
+<validationRegExp></validationRegExp>
 <classType>com.xpn.xwiki.objects.classes.StringClass</classType>
 </cmi_text>
 </class>
@@ -331,22 +399,34 @@ layoutEditor_reorder();##
 <nameField></nameField>
 <validationScript></validationScript>
 <cmi_icon>
+<customDisplay></customDisplay>
 <disabled>0</disabled>
 <name>cmi_icon</name>
 <number>3</number>
-<prettyName>optional CMItem icon</prettyName>
+<picker>0</picker>
+<prettyName>cmi_icon</prettyName>
 <size>30</size>
+<tooltip></tooltip>
 <unmodifiable>0</unmodifiable>
+<validationMessage></validationMessage>
+<validationRegExp></validationRegExp>
 <classType>com.xpn.xwiki.objects.classes.StringClass</classType>
 </cmi_icon>
 <cmi_link>
+<contenttype>FullyRenderedText</contenttype>
+<customDisplay></customDisplay>
 <disabled>0</disabled>
+<editor>---</editor>
 <name>cmi_link</name>
 <number>1</number>
-<prettyName>CMItem Link (velocity code)</prettyName>
+<picker>0</picker>
+<prettyName>cmi_link</prettyName>
 <rows>20</rows>
 <size>80</size>
+<tooltip></tooltip>
 <unmodifiable>0</unmodifiable>
+<validationMessage></validationMessage>
+<validationRegExp></validationRegExp>
 <classType>com.xpn.xwiki.objects.classes.TextAreaClass</classType>
 </cmi_link>
 <cmi_shortcut>
@@ -359,12 +439,17 @@ layoutEditor_reorder();##
 <classType>com.xpn.xwiki.objects.classes.StringClass</classType>
 </cmi_shortcut>
 <cmi_text>
+<customDisplay></customDisplay>
 <disabled>0</disabled>
 <name>cmi_text</name>
 <number>2</number>
-<prettyName>CMItem Link Name</prettyName>
+<picker>0</picker>
+<prettyName>cmi_text</prettyName>
 <size>30</size>
+<tooltip></tooltip>
 <unmodifiable>0</unmodifiable>
+<validationMessage></validationMessage>
+<validationRegExp></validationRegExp>
 <classType>com.xpn.xwiki.objects.classes.StringClass</classType>
 </cmi_text>
 </class>
@@ -411,22 +496,34 @@ $cmenu_pageLink##
 <nameField></nameField>
 <validationScript></validationScript>
 <cmi_icon>
+<customDisplay></customDisplay>
 <disabled>0</disabled>
 <name>cmi_icon</name>
 <number>3</number>
-<prettyName>optional CMItem icon</prettyName>
+<picker>0</picker>
+<prettyName>cmi_icon</prettyName>
 <size>30</size>
+<tooltip></tooltip>
 <unmodifiable>0</unmodifiable>
+<validationMessage></validationMessage>
+<validationRegExp></validationRegExp>
 <classType>com.xpn.xwiki.objects.classes.StringClass</classType>
 </cmi_icon>
 <cmi_link>
+<contenttype>FullyRenderedText</contenttype>
+<customDisplay></customDisplay>
 <disabled>0</disabled>
+<editor>---</editor>
 <name>cmi_link</name>
 <number>1</number>
-<prettyName>CMItem Link (velocity code)</prettyName>
+<picker>0</picker>
+<prettyName>cmi_link</prettyName>
 <rows>20</rows>
 <size>80</size>
+<tooltip></tooltip>
 <unmodifiable>0</unmodifiable>
+<validationMessage></validationMessage>
+<validationRegExp></validationRegExp>
 <classType>com.xpn.xwiki.objects.classes.TextAreaClass</classType>
 </cmi_link>
 <cmi_shortcut>
@@ -439,12 +536,17 @@ $cmenu_pageLink##
 <classType>com.xpn.xwiki.objects.classes.StringClass</classType>
 </cmi_shortcut>
 <cmi_text>
+<customDisplay></customDisplay>
 <disabled>0</disabled>
 <name>cmi_text</name>
 <number>2</number>
-<prettyName>CMItem Link Name</prettyName>
+<picker>0</picker>
+<prettyName>cmi_text</prettyName>
 <size>30</size>
+<tooltip></tooltip>
 <unmodifiable>0</unmodifiable>
+<validationMessage></validationMessage>
+<validationRegExp></validationRegExp>
 <classType>com.xpn.xwiki.objects.classes.StringClass</classType>
 </cmi_text>
 </class>
@@ -480,22 +582,34 @@ window.location.href=&amp;quot;${cmenu_pageLink}&amp;quot;##
 <nameField></nameField>
 <validationScript></validationScript>
 <cmi_icon>
+<customDisplay></customDisplay>
 <disabled>0</disabled>
 <name>cmi_icon</name>
 <number>3</number>
-<prettyName>optional CMItem icon</prettyName>
+<picker>0</picker>
+<prettyName>cmi_icon</prettyName>
 <size>30</size>
+<tooltip></tooltip>
 <unmodifiable>0</unmodifiable>
+<validationMessage></validationMessage>
+<validationRegExp></validationRegExp>
 <classType>com.xpn.xwiki.objects.classes.StringClass</classType>
 </cmi_icon>
 <cmi_link>
+<contenttype>FullyRenderedText</contenttype>
+<customDisplay></customDisplay>
 <disabled>0</disabled>
+<editor>---</editor>
 <name>cmi_link</name>
 <number>1</number>
-<prettyName>CMItem Link (velocity code)</prettyName>
+<picker>0</picker>
+<prettyName>cmi_link</prettyName>
 <rows>20</rows>
 <size>80</size>
+<tooltip></tooltip>
 <unmodifiable>0</unmodifiable>
+<validationMessage></validationMessage>
+<validationRegExp></validationRegExp>
 <classType>com.xpn.xwiki.objects.classes.TextAreaClass</classType>
 </cmi_link>
 <cmi_shortcut>
@@ -508,12 +622,17 @@ window.location.href=&amp;quot;${cmenu_pageLink}&amp;quot;##
 <classType>com.xpn.xwiki.objects.classes.StringClass</classType>
 </cmi_shortcut>
 <cmi_text>
+<customDisplay></customDisplay>
 <disabled>0</disabled>
 <name>cmi_text</name>
 <number>2</number>
-<prettyName>CMItem Link Name</prettyName>
+<picker>0</picker>
+<prettyName>cmi_text</prettyName>
 <size>30</size>
+<tooltip></tooltip>
 <unmodifiable>0</unmodifiable>
+<validationMessage></validationMessage>
+<validationRegExp></validationRegExp>
 <classType>com.xpn.xwiki.objects.classes.StringClass</classType>
 </cmi_text>
 </class>
@@ -528,7 +647,11 @@ window.location.href=&amp;quot;${cmenu_pageLink}&amp;quot;##
 <cmi_link>#if("$!elemId" != '')
 #set($menuItemDoc = $xwiki.getDocument($elemId))
 #set($docFullName = $menuItemDoc.fullName)
+#if("$celementsweb.getVersionMode()" == "celements3")
 #set($cmenu_pageLink = $xwiki.getURL("$docFullName", 'edit', 'tab=3'))
+#else
+#set($cmenu_pageLink = $xwiki.getURL("$docFullName", 'attach'))
+#end
 #set($attachmentDocSpace = $docFullName.substring(0, $docFullName.indexOf('.')))
 #if(!(("$celementsweb.getVersionMode()" == "celements3") &amp;&amp; ("$!context.getXWiki().getWebPreference('cel_centralfilebase', '$attachmentDocSpace', '', $context.getContext())" != '')))
 window.location.href=&amp;quot;${cmenu_pageLink}&amp;quot;##

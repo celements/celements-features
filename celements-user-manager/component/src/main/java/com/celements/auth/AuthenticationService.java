@@ -101,6 +101,7 @@ public class AuthenticationService implements IAuthenticationServiceRole {
 
   public boolean enableUser(User user, String password, boolean forceChange)
       throws DocumentSaveException {
+    LOGGER.debug("enableUser: user = {}, forceChange = {}", user, forceChange);
     XWikiDocument userDoc = user.getDocument();
     var editor = XWikiObjectEditor.on(userDoc).filter(XWikiUsersClass.CLASS_REF);
     boolean changed = false;
@@ -108,7 +109,7 @@ public class AuthenticationService implements IAuthenticationServiceRole {
     changed |= editor.editField(XWikiUsersClass.FIELD_FORCE_PWD_CHANGE).first(forceChange);
     changed |= editor.editField(XWikiUsersClass.FIELD_PASSWORD).first(getPasswordHash(password));
     if (changed) {
-      LOGGER.info("enabled user [{}]", user.getDocRef());
+      LOGGER.info("enableUser: saving user '{}'", user);
       modelAccess.saveDocument(userDoc, "activate account");
     }
     return changed;

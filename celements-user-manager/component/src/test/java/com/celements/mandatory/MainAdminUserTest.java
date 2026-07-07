@@ -6,18 +6,21 @@ import static org.junit.Assert.*;
 
 import org.junit.Before;
 import org.junit.Test;
+import org.xwiki.model.reference.ClassReference;
 import org.xwiki.model.reference.DocumentReference;
 
+import com.celements.auth.user.User;
+import com.celements.auth.user.UserInstantiationException;
+import com.celements.auth.user.UserService;
 import com.celements.common.test.AbstractComponentTest;
 import com.celements.model.access.IModelAccessFacade;
-import com.celements.model.access.exception.DocumentNotExistsException;
 import com.celements.model.classes.ClassDefinition;
 import com.celements.model.classes.fields.ClassField;
 import com.celements.model.object.xwiki.XWikiObjectFetcher;
 import com.celements.model.reference.RefBuilder;
-import com.celements.web.classes.oldcore.XWikiGroupsClass;
 import com.celements.web.classes.oldcore.XWikiUsersClass;
 import com.xpn.xwiki.XWikiConstant;
+import com.xpn.xwiki.XWikiException;
 import com.xpn.xwiki.doc.XWikiDocument;
 import com.xpn.xwiki.objects.BaseObject;
 import com.xpn.xwiki.objects.classes.BaseClass;
@@ -33,6 +36,7 @@ public class MainAdminUserTest extends AbstractComponentTest {
   @Before
   public void prepareTest() throws Exception {
     registerComponentMock(IModelAccessFacade.class);
+    registerComponentMock(UserService.class);
     mandatory = getBeanFactory().getBean("celements.mandatory.MainAdminUser",
         MainAdminUser.class);
   }
@@ -107,20 +111,20 @@ public class MainAdminUserTest extends AbstractComponentTest {
   public void testCheckDocumentsMain_activatesAdminAndAddsToGroup() throws Exception {
     getXContext().setDatabase("xwiki");
     setAdminPassword(ADMIN_PASSWORD);
-    DocumentReference groupRef = getAdminGroupRef();
-    XWikiDocument groupDoc = new XWikiDocument(groupRef);
     DocumentReference adminUserRef = getAdminUserRef();
     XWikiDocument adminUserDoc = newAdminUserDoc(false);
-    expect(getMock(IModelAccessFacade.class).getDocument(adminUserRef)).andReturn(adminUserDoc);
+    User adminUser = createDefaultMock(User.class);
+    expect(getMock(UserService.class).getUser(adminUserRef)).andReturn(adminUser);
+    expect(adminUser.getDocument()).andReturn(adminUserDoc);
     getMock(IModelAccessFacade.class).saveDocument(adminUserDoc, "activate account");
     expectXWikiUsersClass();
-    expectNewGroupsBaseObject(groupRef);
+    expect(getMock(UserService.class).addUserToGroup(adminUser, getAdminGroupRef()))
+        .andReturn(true);
 
     replayDefault();
-    assertTrue(mandatory.checkDocumentsMain(groupDoc));
+    assertFalse(mandatory.checkDocumentsMain(new XWikiDocument(adminUserRef)));
     verifyDefault();
 
-    assertEquals(1, XWikiObjectFetcher.on(groupDoc).filter(XWikiGroupsClass.CLASS_REF).count());
     assertEquals(1, getAdminUserObj(adminUserDoc).getIntValue(
         XWikiUsersClass.FIELD_ACTIVE.getName()));
     assertEquals(new PasswordClass().getEquivalentPassword("hash:SHA-512:", ADMIN_PASSWORD),
@@ -128,58 +132,34 @@ public class MainAdminUserTest extends AbstractComponentTest {
   }
 
   @Test
-  public void testEnableAdminUser_missingUser() throws Exception {
+  public void testCheckDocumentsMain_missingUser() throws Exception {
     getXContext().setDatabase("xwiki");
     DocumentReference adminUserRef = getAdminUserRef();
-    expect(getMock(IModelAccessFacade.class).getDocument(adminUserRef))
-        .andThrow(new DocumentNotExistsException(adminUserRef));
+    expect(getMock(UserService.class).getUser(adminUserRef))
+        .andThrow(new UserInstantiationException("missing"));
 
     replayDefault();
-    assertFalse(mandatory.enableAdminUser(ADMIN_PASSWORD));
+    assertThrows(XWikiException.class,
+        () -> mandatory.checkDocumentsMain(new XWikiDocument(adminUserRef)));
     verifyDefault();
   }
 
   @Test
-  public void testAddAdminUserToAdminGroup_create() throws Exception {
+  public void testCheckDocumentsMain_withoutPassword_addsToGroupOnly() throws Exception {
     getXContext().setDatabase("xwiki");
-    DocumentReference groupRef = getAdminGroupRef();
-    XWikiDocument groupDoc = new XWikiDocument(groupRef);
-    expectNewGroupsBaseObject(groupRef);
+    DocumentReference adminUserRef = getAdminUserRef();
+    User adminUser = createDefaultMock(User.class);
+    expect(getMock(UserService.class).getUser(adminUserRef)).andReturn(adminUser);
+    expect(getMock(UserService.class).addUserToGroup(adminUser, getAdminGroupRef()))
+        .andReturn(false);
 
     replayDefault();
-    assertTrue(mandatory.addAdminUserToAdminGroup(groupDoc));
+    assertFalse(mandatory.checkDocumentsMain(new XWikiDocument(adminUserRef)));
     verifyDefault();
-
-    assertEquals(1, XWikiObjectFetcher.on(groupDoc).filter(XWikiGroupsClass.CLASS_REF).count());
-    assertEquals("XWiki." + MainAdminUser.ADMIN_DOC_NAME,
-        XWikiObjectFetcher.on(groupDoc)
-            .filter(XWikiGroupsClass.CLASS_REF)
-            .stream()
-            .findFirst()
-            .orElseThrow()
-            .getStringValue(XWikiGroupsClass.FIELD_MEMBER.getName()));
   }
 
-  @Test
-  public void testAddAdminUserToAdminGroup_exists() throws Exception {
-    getXContext().setDatabase("xwiki");
-    DocumentReference groupRef = getAdminGroupRef();
-    XWikiDocument groupDoc = new XWikiDocument(groupRef);
-    expectNewGroupsBaseObject(groupRef);
-
-    replayDefault();
-    assertTrue(mandatory.addAdminUserToAdminGroup(groupDoc));
-    assertFalse(mandatory.addAdminUserToAdminGroup(groupDoc));
-    verifyDefault();
-
-    assertEquals(1, XWikiObjectFetcher.on(groupDoc).filter(XWikiGroupsClass.CLASS_REF).count());
-  }
-
-  private DocumentReference getAdminGroupRef() {
-    return new RefBuilder().wiki("xwiki")
-        .space(XWikiConstant.XWIKI_SPACE)
-        .doc("XWikiAdminGroup")
-        .build(DocumentReference.class);
+  private ClassReference getAdminGroupRef() {
+    return new ClassReference(XWikiConstant.XWIKI_SPACE, "XWikiAdminGroup");
   }
 
   private void setAdminPassword(String password) {
@@ -219,14 +199,6 @@ public class MainAdminUserTest extends AbstractComponentTest {
     for (ClassField<?> field : classDef.getFields()) {
       expect(baseClass.get(field.getName())).andReturn(field.getXField()).anyTimes();
     }
-  }
-
-  private void expectNewGroupsBaseObject(DocumentReference groupRef) throws Exception {
-    BaseClass baseClass = expectNewBaseObject(XWikiGroupsClass.CLASS_REF.getDocRef(
-        groupRef.getWikiReference()));
-    expect(baseClass.get(XWikiGroupsClass.FIELD_MEMBER.getName()))
-        .andReturn(XWikiGroupsClass.FIELD_MEMBER.getXField())
-        .anyTimes();
   }
 
 }
