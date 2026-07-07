@@ -11,14 +11,14 @@
 <customClass></customClass>
 <contentAuthor>xwiki:XWiki.cpichler</contentAuthor>
 <creationDate>1684490522000</creationDate>
-<date>1699884154000</date>
+<date>1771342470000</date>
 <contentUpdateDate>1684490613000</contentUpdateDate>
-<version>8.1</version>
+<version>9.1</version>
 <title></title>
 <template></template>
 <defaultTemplate></defaultTemplate>
 <validationScript></validationScript>
-<comment>updateAndSaveDocFormRequest</comment>
+<comment>Restructuring</comment>
 <minorEdit>false</minorEdit>
 <syntaxId>xwiki/1.0</syntaxId>
 <hidden>false</hidden>
@@ -141,6 +141,7 @@
 <multilingual>
 <disabled>0</disabled>
 <displayFormType>select</displayFormType>
+<displayType>yesno</displayType>
 <name>multilingual</name>
 <number>3</number>
 <prettyName>Multilingual</prettyName>
@@ -239,7 +240,7 @@
 <menu_parent></menu_parent>
 </property>
 <property>
-<menu_position>5</menu_position>
+<menu_position>2</menu_position>
 </property>
 <property>
 <part_name></part_name>

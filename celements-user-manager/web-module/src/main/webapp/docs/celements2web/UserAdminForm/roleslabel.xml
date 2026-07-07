@@ -3,7 +3,7 @@
 <web>UserAdminForm</web>
 <name>roleslabel</name>
 <language></language>
-<defaultLanguage>en</defaultLanguage>
+<defaultLanguage>de</defaultLanguage>
 <translation>0</translation>
 <parent>UserAdminForm.roleWrapper</parent>
 <creator>xwiki:XWiki.msladek</creator>
@@ -126,6 +126,7 @@
 <multilingual>
 <disabled>0</disabled>
 <displayFormType>select</displayFormType>
+<displayType>yesno</displayType>
 <name>multilingual</name>
 <number>3</number>
 <prettyName>Multilingual</prettyName>

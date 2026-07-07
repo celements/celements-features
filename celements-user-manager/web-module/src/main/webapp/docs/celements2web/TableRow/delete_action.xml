@@ -11,9 +11,9 @@
 <customClass></customClass>
 <contentAuthor>xwiki:XWiki.cpichler</contentAuthor>
 <creationDate>1686150155000</creationDate>
-<date>1721316794000</date>
-<contentUpdateDate>1721316794000</contentUpdateDate>
-<version>20.1</version>
+<date>1771507288000</date>
+<contentUpdateDate>1771507288000</contentUpdateDate>
+<version>36.1</version>
 <title></title>
 <template></template>
 <defaultTemplate></defaultTemplate>
@@ -275,7 +275,4 @@
 <page_type>CelementsCell</page_type>
 </property>
 </object>
-<content>#set($iconDeleteCssClass = "fa-solid fa-trash-can")
-#set($xredirect = "/app/cel/admin/UserAdmin")
-#set($xcancel = "/app/cel/admin/UserAdmin")
-#parse('celStruct/table/col_delete.vm')</content></xwikidoc>
+<content>#parse('celMacros/userAdmin/col_delete.vm')</content></xwikidoc>
