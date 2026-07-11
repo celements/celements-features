@@ -106,7 +106,10 @@ public class CelTagServiceTest extends AbstractComponentTest {
     var globalTag = CelTag.builder().type(tagType).name("global");
     var localTag = CelTag.builder().type(tagType).name("local").scope(wiki);
     var foreignTag = CelTag.builder().type(tagType).name("foreign").scope(otherWiki);
-    expect(providerMock.get()).andReturn(List.of(globalTag, localTag, foreignTag)).anyTimes();
+    var localSharedTag = CelTag.builder().type(tagType).name("shared").scope(wiki);
+    var foreignSharedTag = CelTag.builder().type(tagType).name("shared").scope(otherWiki);
+    expect(providerMock.get()).andReturn(List.of(
+        globalTag, localTag, foreignTag, localSharedTag, foreignSharedTag)).anyTimes();
 
     var tagXObj = new BaseObject();
     tagXObj.setXClassReference(CLASS_REF.getDocRef());
@@ -119,10 +122,15 @@ public class CelTagServiceTest extends AbstractComponentTest {
     expectPropertyClass(xClass, FIELD_TAGS.getName(), new StaticListClass());
 
     replayDefault();
-    assertEquals(List.of("global", "local"), service.streamTags(tagType, wiki)
+    assertEquals(List.of("global", "local", "shared"), service.streamTags(tagType, wiki)
         .map(CelTag::getName).toList());
-    assertEquals(List.of("global", "foreign"), service.streamTags(tagType, otherWiki)
+    assertEquals(List.of("global", "foreign", "shared"), service.streamTags(tagType, otherWiki)
         .map(CelTag::getName).toList());
+    assertEquals(wiki, service.getTag(tagType, "shared", wiki).orElseThrow()
+        .getScope().orElseThrow());
+    assertEquals(otherWiki, service.getTag(tagType, "shared", otherWiki).orElseThrow()
+        .getScope().orElseThrow());
+    assertEquals("global", service.getTag(tagType, "global", wiki).orElseThrow().getName());
     assertEquals(List.of("global", "local"), service.getDocTags(doc, tagType)
         .map(CelTag::getName).toList());
     assertTrue(service.setTags(doc, tagType, "global", "local", "foreign", "unknown"));

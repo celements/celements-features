@@ -70,6 +70,14 @@ public class CelTagService implements ApplicationListener<CelTagService.RefreshE
   }
 
   @NotNull
+  public Optional<CelTag> getTag(@Nullable String type, @Nullable String name,
+      @Nullable EntityReference scope) {
+    return streamTags(type, scope)
+        .filter(tag -> tag.getName().equals(name))
+        .findFirst();
+  }
+
+  @NotNull
   public StreamEx<CelTag> streamTags(@Nullable String type) {
     return StreamEx.of(getTagsByType().get(normaliseType(type)));
   }
