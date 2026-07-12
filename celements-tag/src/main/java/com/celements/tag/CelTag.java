@@ -2,7 +2,6 @@ package com.celements.tag;
 
 import static com.celements.spring.context.SpringContextProvider.*;
 import static com.google.common.base.Preconditions.*;
-import static java.util.stream.Collectors.*;
 import static one.util.streamex.MoreCollectors.*;
 
 import java.util.Comparator;
@@ -57,7 +56,7 @@ public final class CelTag {
       .getTagsByType()
       .get(getType()).stream()
       .filter(tag -> tag.getParent().filter(this::equals).isPresent())
-      .collect(toUnmodifiableList()));
+      .toList());
 
   private CelTag(Builder builder) {
     checkArgument(builder.hasAllDependencies());
@@ -70,7 +69,7 @@ public final class CelTag {
     this.dependencies = builder.dependencies.values().stream()
         .filter(Objects::nonNull)
         .filter(tag -> !tag.getName().equals(builder.parent))
-        .collect(toUnmodifiableList());
+        .toList();
     this.prettyNameForLangGetter = Optional.ofNullable(builder.prettyNameForLangGetter)
         .orElse(lang -> Optional.empty());
     this.depth = (int) getAncestors().count();
@@ -158,8 +157,7 @@ public final class CelTag {
   public boolean equals(Object obj) {
     if (this == obj) {
       return true;
-    } else if (obj instanceof CelTag) {
-      CelTag other = (CelTag) obj;
+    } else if (obj instanceof CelTag other) {
       return Objects.equals(this.type, other.type)
           && Objects.equals(this.name, other.name)
           && Objects.equals(this.scope, other.scope);
