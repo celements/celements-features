@@ -31,25 +31,14 @@ import javax.mail.internet.InternetAddress;
 import org.jvnet.mock_javamail.Mailbox;
 
 import com.xpn.xwiki.doc.XWikiDocument;
-import com.xpn.xwiki.test.AbstractBridgedXWikiComponentTestCase;
 **/
-
-import org.jmock.Mock;
-
-import com.xpn.xwiki.XWiki;
 
 /**
  * Integration tests for {@link com.xpn.xwiki.plugin.mailsender.Mail}. The tests start a SMTP
  * server.
  */
-// public class MailSenderApiTest extends AbstractBridgedXWikiComponentTestCase {
+// public class MailSenderApiTest {
 public class MailSenderApiTest {
-
-  private Mock mockXWiki;
-
-  private XWiki xwiki;
-
-  private MailSenderPluginApi api;
 
   /*
    * @Override
