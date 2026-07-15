@@ -8,6 +8,7 @@ import static com.google.common.base.Strings.*;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -39,6 +40,7 @@ import com.celements.tag.providers.CelTagsProvider.CelTagsProvisionException;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.Multimap;
+import com.google.common.collect.Sets;
 import com.xpn.xwiki.doc.XWikiDocument;
 import com.xpn.xwiki.util.AbstractXWikiRunnable;
 
@@ -206,15 +208,21 @@ public class CelTagService implements ApplicationListener<CelTagService.RefreshE
     return changed;
   }
 
+  /**
+   * Replaces all tags of the given type. Empty input clears the tag type.
+   *
+   * @throws IllegalArgumentException
+   *           if the type is empty or any supplied tags is unavailable
+   */
   public boolean setTags(@NotNull XWikiDocument doc, @NotEmpty String type,
       @Nullable String... tags) {
     var tagType = normaliseType(type);
     checkArgument(!tagType.isEmpty(), "tag type cannot be empty");
-    var tagNames = normaliseTagNames(tags).toSet();
-    return setTagXObj(doc, tagType, fetcher -> streamTags(tagType, doc.getWikiRef())
-        .filter(tag -> tagNames.contains(tag.getName()))
-        .map(CelTag::getName)
-        .toList());
+    var requestedTags = normaliseTagNames(tags).toCollection(LinkedHashSet::new);
+    var availableTags = streamTags(tagType, doc.getWikiRef()).map(CelTag::getName).toSet();
+    var invalidTags = Sets.difference(requestedTags, availableTags);
+    checkArgument(invalidTags.isEmpty(), "invalid tags for type '%s': %s", tagType, invalidTags);
+    return setTagXObj(doc, tagType, fetcher -> List.copyOf(requestedTags));
   }
 
   private boolean setTagXObj(XWikiDocument doc, String type,

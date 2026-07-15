@@ -133,14 +133,19 @@ public class CelTagServiceTest extends AbstractComponentTest {
     assertEquals("global", service.getTag(tagType, "global", wiki).orElseThrow().getName());
     assertEquals(List.of("global", "local"), service.getDocTags(doc, tagType)
         .map(CelTag::getName).toList());
-    assertTrue(service.setTags(doc, tagType, "global", "local", "foreign", "unknown"));
+    IllegalArgumentException exc = assertThrows(IllegalArgumentException.class,
+        () -> service.setTags(doc, tagType, "global", "local", "foreign", "unknown"));
+    assertEquals("invalid tags for type 'type': [foreign, unknown]", exc.getMessage());
+    assertEquals("global|local|foreign", tagXObj.getStringValue(FIELD_TAGS.getName()));
+    assertTrue(service.setTags(doc, tagType, "global", "local"));
     assertEquals("global|local", tagXObj.getStringValue(FIELD_TAGS.getName()));
-    assertTrue(service.setTags(doc, tagType, "foreign", "unknown"));
-    assertEquals("", tagXObj.getStringValue(FIELD_TAGS.getName()));
+    assertThrows(IllegalArgumentException.class,
+        () -> service.setTags(doc, tagType, "foreign", "unknown"));
+    assertEquals("global|local", tagXObj.getStringValue(FIELD_TAGS.getName()));
     CelTag global = service.getTag(tagType, "global").orElseThrow();
     CelTag local = service.getTag(tagType, "local").orElseThrow();
     CelTag foreign = service.getTag(tagType, "foreign").orElseThrow();
-    assertTrue(service.addTags(doc, global, local, foreign));
+    assertFalse(service.addTags(doc, global, local, foreign));
     assertEquals("global|local", tagXObj.getStringValue(FIELD_TAGS.getName()));
     verifyDefault();
   }
