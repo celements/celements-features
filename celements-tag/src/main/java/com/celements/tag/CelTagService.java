@@ -1,21 +1,25 @@
 package com.celements.tag;
 
 import static com.celements.common.lambda.LambdaExceptionUtil.*;
+import static com.google.common.base.Preconditions.*;
+import static com.google.common.base.Predicates.*;
 import static com.google.common.base.Strings.*;
-import static java.util.stream.Collectors.*;
 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Function;
 import java.util.stream.Stream;
 
 import javax.annotation.Nullable;
 import javax.inject.Inject;
+import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
 
 import org.slf4j.Logger;
@@ -24,6 +28,7 @@ import org.springframework.beans.factory.ListableBeanFactory;
 import org.springframework.context.ApplicationEvent;
 import org.springframework.context.ApplicationListener;
 import org.springframework.stereotype.Service;
+import org.xwiki.model.reference.EntityReference;
 
 import com.celements.common.lambda.Try;
 import com.celements.model.field.XObjectFieldAccessor;
@@ -32,8 +37,10 @@ import com.celements.model.object.xwiki.XWikiObjectFetcher;
 import com.celements.tag.classdefs.CelTagClass;
 import com.celements.tag.providers.CelTagsProvider;
 import com.celements.tag.providers.CelTagsProvider.CelTagsProvisionException;
+import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.Multimap;
+import com.google.common.collect.Sets;
 import com.xpn.xwiki.doc.XWikiDocument;
 import com.xpn.xwiki.util.AbstractXWikiRunnable;
 
@@ -59,14 +66,27 @@ public class CelTagService implements ApplicationListener<CelTagService.RefreshE
 
   @NotNull
   public Optional<CelTag> getTag(@Nullable String type, @Nullable String name) {
-    return getTagsByType().get(type).stream()
+    return getTagsByType().get(normaliseType(type)).stream()
+        .filter(tag -> tag.getName().equals(name))
+        .findFirst();
+  }
+
+  @NotNull
+  public Optional<CelTag> getTag(@Nullable String type, @Nullable String name,
+      @Nullable EntityReference scope) {
+    return streamTags(type, scope)
         .filter(tag -> tag.getName().equals(name))
         .findFirst();
   }
 
   @NotNull
   public StreamEx<CelTag> streamTags(@Nullable String type) {
-    return StreamEx.of(getTagsByType().get(nullToEmpty(type).toLowerCase()));
+    return StreamEx.of(getTagsByType().get(normaliseType(type)));
+  }
+
+  @NotNull
+  public StreamEx<CelTag> streamTags(@Nullable String type, @Nullable EntityReference scope) {
+    return streamTags(type).filter(tag -> tag.hasScope(scope));
   }
 
   @NotNull
@@ -98,12 +118,12 @@ public class CelTagService implements ApplicationListener<CelTagService.RefreshE
   }
 
   private Multimap<String, CelTag> collectAllTags() throws CelTagsProvisionException {
-    List<CelTag.Builder> tagBuilders = beanFactory
+    List<CelTag.Builder> tagBuilders = new ArrayList<>(beanFactory
         .getBeansOfType(CelTagsProvider.class)
         .values().stream()
         .map(rethrow(CelTagsProvider::get))
         .flatMap(Collection::stream)
-        .collect(toList());
+        .toList());
     LOGGER.info("collectAllTags - {}", tagBuilders);
     return topologicalBuild(tagBuilders);
   }
@@ -152,14 +172,15 @@ public class CelTagService implements ApplicationListener<CelTagService.RefreshE
   public StreamEx<CelTag> getDocTags(@NotNull XWikiDocument doc, @Nullable String type) {
     XWikiObjectFetcher fetcher = XWikiObjectFetcher.on(doc)
         .filter(CelTagClass.CLASS_REF);
-    type = nullToEmpty(type).trim();
+    type = normaliseType(type);
     if (!type.isEmpty()) {
       fetcher = fetcher.filter(CelTagClass.FIELD_TYPE, type);
     }
     return StreamEx.of(fetcher.stream()).flatMap(obj -> getTags(
         fieldAccessor.get(obj, CelTagClass.FIELD_TYPE),
         fieldAccessor.get(obj, CelTagClass.FIELD_TAGS)
-            .map(Set::copyOf).orElse(Set.of())));
+            .map(Set::copyOf).orElse(Set.of())))
+        .filter(tag -> tag.hasScope(doc.getWikiRef()));
   }
 
   private Stream<CelTag> getTags(Optional<String> type, Set<String> tags) {
@@ -172,18 +193,58 @@ public class CelTagService implements ApplicationListener<CelTagService.RefreshE
   @NotNull
   public boolean addTags(@NotNull XWikiDocument doc, @NotNull CelTag... tags) {
     boolean changed = false;
-    for (var tagsByType : StreamEx.of(tags).groupingBy(CelTag::getType).entrySet()) {
-      var editor = XWikiObjectEditor.on(doc)
-          .filter(CelTagClass.FIELD_TYPE, tagsByType.getKey());
-      editor.createFirstIfNotExists();
-      changed |= editor.editField(CelTagClass.FIELD_TAGS)
-          .all(() -> StreamEx.of(editor.fetch().fetchField(CelTagClass.FIELD_TAGS).stream())
-              .flatMap(List::stream)
-              .append(tagsByType.getValue().stream().map(CelTag::getName))
-              .distinct()
-              .toList());
+    var groupedTags = StreamEx.of(tags)
+        .filter(tag -> tag.hasScope(doc.getWikiRef()))
+        .groupingBy(CelTag::getType);
+    for (var tagsByType : groupedTags.entrySet()) {
+      var type = tagsByType.getKey();
+      changed |= setTagXObj(doc, type, fetcher -> StreamEx
+          .of(fetcher.fetchField(CelTagClass.FIELD_TAGS).stream())
+          .flatMap(List::stream)
+          .append(tagsByType.getValue().stream().map(CelTag::getName))
+          .distinct()
+          .toList());
     }
     return changed;
+  }
+
+  /**
+   * Replaces all tags of the given type. Empty input clears the tag type.
+   *
+   * @throws IllegalArgumentException
+   *           if the type is empty or any supplied tags is unavailable
+   */
+  public boolean setTags(@NotNull XWikiDocument doc, @NotEmpty String type,
+      @Nullable String... tags) {
+    var tagType = normaliseType(type);
+    checkArgument(!tagType.isEmpty(), "tag type cannot be empty");
+    var requestedTags = normaliseTagNames(tags).toCollection(LinkedHashSet::new);
+    var availableTags = streamTags(tagType, doc.getWikiRef()).map(CelTag::getName).toSet();
+    var invalidTags = Sets.difference(requestedTags, availableTags);
+    checkArgument(invalidTags.isEmpty(), "invalid tags for type '%s': %s", tagType, invalidTags);
+    return setTagXObj(doc, tagType, fetcher -> List.copyOf(requestedTags));
+  }
+
+  private boolean setTagXObj(XWikiDocument doc, String type,
+      Function<XWikiObjectFetcher, List<String>> names) {
+    var editor = XWikiObjectEditor.on(doc)
+        .filter(CelTagClass.FIELD_TYPE, type);
+    editor.createFirstIfNotExists();
+    return editor.editField(CelTagClass.FIELD_TAGS).all(names.apply(editor.fetch()));
+  }
+
+  private String normaliseType(@Nullable String type) {
+    return nullToEmpty(type).trim().toLowerCase();
+  }
+
+  private StreamEx<String> normaliseTagNames(@Nullable String... tags) {
+    return StreamEx.ofNullable(tags)
+        .flatMap(Stream::of)
+        .map(Strings::nullToEmpty)
+        .map(String::trim)
+        .filter(not(String::isEmpty))
+        .map(String::toLowerCase)
+        .distinct();
   }
 
   @Override
