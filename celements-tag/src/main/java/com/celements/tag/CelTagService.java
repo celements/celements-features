@@ -37,7 +37,6 @@ import com.celements.model.object.xwiki.XWikiObjectFetcher;
 import com.celements.tag.classdefs.CelTagClass;
 import com.celements.tag.providers.CelTagsProvider;
 import com.celements.tag.providers.CelTagsProvider.CelTagsProvisionException;
-import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
@@ -66,16 +65,18 @@ public class CelTagService implements ApplicationListener<CelTagService.RefreshE
 
   @NotNull
   public Optional<CelTag> getTag(@Nullable String type, @Nullable String name) {
+    var tagName = normaliseTagName(name);
     return getTagsByType().get(normaliseType(type)).stream()
-        .filter(tag -> tag.getName().equals(name))
+        .filter(tag -> tag.getName().equals(tagName))
         .findFirst();
   }
 
   @NotNull
   public Optional<CelTag> getTag(@Nullable String type, @Nullable String name,
       @Nullable EntityReference scope) {
+    var tagName = normaliseTagName(name);
     return streamTags(type, scope)
-        .filter(tag -> tag.getName().equals(name))
+        .filter(tag -> tag.getName().equals(tagName))
         .findFirst();
   }
 
@@ -237,13 +238,15 @@ public class CelTagService implements ApplicationListener<CelTagService.RefreshE
     return nullToEmpty(type).trim().toLowerCase();
   }
 
+  private String normaliseTagName(@Nullable String name) {
+    return nullToEmpty(name).trim().toLowerCase();
+  }
+
   private StreamEx<String> normaliseTagNames(@Nullable String... tags) {
     return StreamEx.ofNullable(tags)
         .flatMap(Stream::of)
-        .map(Strings::nullToEmpty)
-        .map(String::trim)
+        .map(this::normaliseTagName)
         .filter(not(String::isEmpty))
-        .map(String::toLowerCase)
         .distinct();
   }
 
