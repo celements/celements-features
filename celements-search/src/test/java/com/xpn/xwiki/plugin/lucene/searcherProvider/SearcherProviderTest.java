@@ -332,14 +332,19 @@ public class SearcherProviderTest extends AbstractComponentTest {
   @Test
   public void test_tryClose_retainActivThread() throws Exception {
     assertTrue(searcherProvider.connectedThreads.isEmpty());
-    Thread testThread = new Thread();
+    Thread testThread = new Thread(() -> {
+      try {
+        Thread.sleep(10000L);
+      } catch (InterruptedException e) {}
+    });
     replayDefault();
     searcherProvider.connectedThreads.add(testThread);
     assertFalse(searcherProvider.connectedThreads.isEmpty());
     testThread.start();
-    assertTrue(testThread.isAlive());
+    waitForState(testThread, State.TIMED_WAITING);
     searcherProvider.tryClose();
     assertFalse(searcherProvider.connectedThreads.isEmpty());
+    testThread.interrupt();
     testThread.join();
     assertFalse(testThread.isAlive());
     searcherProvider.tryClose();
