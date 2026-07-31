@@ -7,7 +7,7 @@
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>celements-search</artifactId>
-  <version>7.1-SNAPSHOT</version>
+  <version>7.1-RC1</version>
   <description>Celements Search</description>
   <dependencies>
     <dependency>
@@ -223,6 +223,6 @@
     <connection>scm:git:git@github.com:celements/celements-features.git</connection>
     <developerConnection>scm:git:git@github.com:celements/celements-features.git</developerConnection>
     <url>https://github.com/celements/celements-features/celements-search</url>
-    <tag>HEAD</tag>
+    <tag>celements-search-7.1-RC1</tag>
   </scm>
 </project>
