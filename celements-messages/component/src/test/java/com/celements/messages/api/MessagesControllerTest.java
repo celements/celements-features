@@ -3,17 +3,8 @@ package com.celements.messages.api;
 import static org.easymock.EasyMock.*;
 import static org.junit.Assert.*;
 
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.io.StringWriter;
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Optional;
-import java.util.Set;
-import java.util.function.Consumer;
-
-import javax.servlet.ServletContext;
 
 import org.apache.velocity.VelocityContext;
 import org.junit.Before;
@@ -22,34 +13,28 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import org.xwiki.velocity.VelocityEngine;
 import org.xwiki.velocity.VelocityManager;
-import org.xwiki.velocity.XWikiVelocityException;
 
 import com.celements.auth.user.User;
-import com.celements.sajson.JsonBuilder;
+import com.celements.messages.service.MessageService;
 import com.celements.web.service.IPrepareVelocityContext;
 
 public class MessagesControllerTest {
 
-  private ServletContext servletContext;
   private VelocityManager velocityManager;
-  private VelocityEngine velocityEngine;
   private IPrepareVelocityContext prepareVelocityContext;
+  private MessageService messageService;
   private VelocityContext velocityContext;
   private TestMessagesController controller;
-  private List<String> evaluatedFragments;
 
   @Before
   public void prepareTest() {
-    servletContext = createMock(ServletContext.class);
     velocityManager = createMock(VelocityManager.class);
-    velocityEngine = createMock(VelocityEngine.class);
     prepareVelocityContext = createMock(IPrepareVelocityContext.class);
+    messageService = createMock(MessageService.class);
     velocityContext = new VelocityContext();
-    controller = new TestMessagesController(servletContext, velocityManager,
-        prepareVelocityContext);
-    evaluatedFragments = new ArrayList<>();
+    controller = new TestMessagesController(velocityManager, prepareVelocityContext,
+        messageService);
   }
 
   @Test
@@ -69,157 +54,61 @@ public class MessagesControllerTest {
   }
 
   @Test
-  public void testGetMessagesUsesPreparedExistingContextAndLexicalDirectFragments()
-      throws Exception {
-    String directory = MessagesController.GENERAL_FRAGMENT_DIRECTORY;
-    String celements = directory + "celements.vm";
-    String zeta = directory + "zeta.vm";
-    expectContextAndDiscovery(directory, Set.of(zeta, directory + "nested/ignored.vm", celements));
-    expectFragment(celements, " \n", true, builder -> {
-      builder.addProperty("string", "value");
-      builder.addProperty("boolean", true);
-      builder.addProperty("number", 7);
-    });
-    expectFragment(zeta, "\n", true, builder -> builder.addProperty("zeta", "last"));
+  public void testGetMessagesUsesPreparedExistingContext() throws Exception {
+    expectPreparedContext();
+    expect(messageService.getMessages(same(velocityContext))).andReturn("{\"message\":\"value\"}");
     replayAll();
 
-    String json = controller.getMessages();
+    assertEquals("{\"message\":\"value\"}", controller.getMessages());
 
-    assertEquals(
-        "{\"string\" : \"value\", \"boolean\" : true, \"number\" : 7, " + "\"zeta\" : \"last\"}",
-        json);
     assertTrue(controller.isCheckAuthCalled());
-    assertEquals(List.of(celements, zeta), evaluatedFragments);
-    assertFalse(velocityContext.containsKey("jsonBuilder"));
     verifyAll();
   }
 
   @Test
-  public void testGetValidationMessagesUsesOnlyValidationDirectory() throws Exception {
-    String directory = MessagesController.VALIDATION_FRAGMENT_DIRECTORY;
-    String celements = directory + "celements.vm";
-    expectContextAndDiscovery(directory, Set.of(celements));
-    expectFragment(celements, "", true, builder -> builder.addProperty("required", "Required"));
+  public void testGetValidationMessagesUsesPreparedExistingContext() throws Exception {
+    expectPreparedContext();
+    expect(messageService.getValidationMessages(same(velocityContext)))
+        .andReturn("{\"required\":\"Required\"}");
     replayAll();
 
-    assertEquals("{\"required\" : \"Required\"}", controller.getValidationMessages());
+    assertEquals("{\"required\":\"Required\"}", controller.getValidationMessages());
 
-    assertEquals(List.of(celements), evaluatedFragments);
+    assertTrue(controller.isCheckAuthCalled());
     verifyAll();
   }
 
   @Test
-  public void testMissingCelementsFragmentFailsCompleteRequest() {
-    String directory = MessagesController.GENERAL_FRAGMENT_DIRECTORY;
-    expectContextAndDiscoveryWithoutEngine(directory, Set.of(directory + "product.vm"));
+  public void testServiceFailurePropagates() throws Exception {
+    expectPreparedContext();
+    expect(messageService.getMessages(same(velocityContext))).andThrow(new IOException("failed"));
     replayAll();
 
     assertThrows(IOException.class, controller::getMessages);
 
-    assertFalse(velocityContext.containsKey("jsonBuilder"));
     verifyAll();
   }
 
-  @Test
-  public void testNonWhitespaceFragmentOutputFailsCompleteRequest() throws Exception {
-    String directory = MessagesController.GENERAL_FRAGMENT_DIRECTORY;
-    String celements = directory + "celements.vm";
-    expectContextAndDiscovery(directory, Set.of(celements));
-    expectFragment(celements, "unexpected", true,
-        builder -> builder.addProperty("message", "value"));
-    replayAll();
-
-    assertThrows(IOException.class, controller::getMessages);
-
-    assertFalse(velocityContext.containsKey("jsonBuilder"));
-    verifyAll();
-  }
-
-  @Test
-  public void testFailedFragmentEvaluationFailsCompleteRequest() throws Exception {
-    String directory = MessagesController.GENERAL_FRAGMENT_DIRECTORY;
-    String celements = directory + "celements.vm";
-    expectContextAndDiscovery(directory, Set.of(celements));
-    expectFragment(celements, "", false, builder -> assertNotNull(builder));
-    replayAll();
-
-    assertThrows(XWikiVelocityException.class, controller::getMessages);
-
-    assertFalse(velocityContext.containsKey("jsonBuilder"));
-    verifyAll();
-  }
-
-  @Test
-  public void testUnbalancedBuilderDepthFailsCompleteRequest() throws Exception {
-    String directory = MessagesController.GENERAL_FRAGMENT_DIRECTORY;
-    String celements = directory + "celements.vm";
-    expectContextAndDiscovery(directory, Set.of(celements));
-    expectFragment(celements, "", true, builder -> builder.openDictionary("nested"));
-    replayAll();
-
-    assertThrows(IllegalStateException.class, controller::getMessages);
-
-    assertFalse(velocityContext.containsKey("jsonBuilder"));
-    verifyAll();
-  }
-
-  @Test
-  public void testExistingJsonBuilderContextValueIsRestored() throws Exception {
-    String directory = MessagesController.GENERAL_FRAGMENT_DIRECTORY;
-    String celements = directory + "celements.vm";
-    var previousBuilder = new JsonBuilder();
-    velocityContext.put("jsonBuilder", previousBuilder);
-    expectContextAndDiscovery(directory, Set.of(celements));
-    expectFragment(celements, "", true, builder -> builder.addProperty("message", "value"));
-    replayAll();
-
-    controller.getMessages();
-
-    assertSame(previousBuilder, velocityContext.get("jsonBuilder"));
-    verifyAll();
-  }
-
-  private void expectContextAndDiscovery(String directory, Set<String> resources)
-      throws XWikiVelocityException {
-    expectContextAndDiscoveryWithoutEngine(directory, resources);
-    expect(velocityManager.getVelocityEngine()).andReturn(velocityEngine);
-  }
-
-  private void expectContextAndDiscoveryWithoutEngine(String directory, Set<String> resources) {
+  private void expectPreparedContext() {
     expect(velocityManager.getVelocityContext()).andReturn(velocityContext);
     prepareVelocityContext.prepareVelocityContext(same(velocityContext));
-    expect(servletContext.getResourcePaths(directory)).andReturn(resources);
-  }
-
-  private void expectFragment(String path, String output, boolean result,
-      Consumer<JsonBuilder> builderAction) throws Exception {
-    String source = "fragment:" + path;
-    expect(servletContext.getResourceAsStream(path))
-        .andReturn(new ByteArrayInputStream(source.getBytes(StandardCharsets.UTF_8)));
-    expect(velocityEngine.evaluate(same(velocityContext), isA(StringWriter.class), eq(path),
-        eq(source))).andAnswer(() -> {
-          evaluatedFragments.add(path);
-          builderAction.accept((JsonBuilder) velocityContext.get("jsonBuilder"));
-          ((StringWriter) getCurrentArguments()[1]).write(output);
-          return result;
-        });
   }
 
   private void replayAll() {
-    replay(servletContext, velocityManager, velocityEngine, prepareVelocityContext);
+    replay(velocityManager, prepareVelocityContext, messageService);
   }
 
   private void verifyAll() {
-    verify(servletContext, velocityManager, velocityEngine, prepareVelocityContext);
+    verify(velocityManager, prepareVelocityContext, messageService);
   }
 
   private static final class TestMessagesController extends MessagesController {
 
     private boolean checkAuthCalled;
 
-    TestMessagesController(ServletContext servletContext, VelocityManager velocityManager,
-        IPrepareVelocityContext prepareVelocityContext) {
-      super(servletContext, velocityManager, prepareVelocityContext);
+    TestMessagesController(VelocityManager velocityManager,
+        IPrepareVelocityContext prepareVelocityContext, MessageService messageService) {
+      super(velocityManager, prepareVelocityContext, messageService);
     }
 
     @Override

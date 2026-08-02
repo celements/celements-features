@@ -41,6 +41,11 @@
       <scope>provided</scope>
     </dependency>
     <dependency>
+      <groupId>org.xwiki.platform</groupId>
+      <artifactId>xwiki-core-script</artifactId>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
       <groupId>javax.inject</groupId>
       <artifactId>javax.inject</artifactId>
     </dependency>
