@@ -1,0 +1,5 @@
+#set($jsonBuilder = $services.celementsweb.getNewJSONBuilder())
+$jsonBuilder.openDictionary()
+#parse('celMessages/validation/celements.vm')
+$jsonBuilder.closeDictionary()
+$jsonBuilder.getJSON()
