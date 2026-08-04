@@ -4,37 +4,35 @@ import static org.easymock.EasyMock.*;
 import static org.junit.Assert.*;
 
 import java.io.IOException;
-import java.util.Optional;
 
 import org.apache.velocity.VelocityContext;
 import org.junit.Before;
 import org.junit.Test;
+import org.springframework.aop.framework.Advised;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.xwiki.velocity.VelocityManager;
 
-import com.celements.auth.user.User;
+import com.celements.auth.user.UserService;
+import com.celements.common.test.AbstractComponentTest;
 import com.celements.messages.service.MessageService;
+import com.celements.rights.access.IRightsAccessFacadeRole;
 import com.celements.web.service.IPrepareVelocityContext;
+import com.xpn.xwiki.XWiki;
 
-public class MessagesControllerTest {
+public class MessagesControllerTest extends AbstractComponentTest {
 
-  private VelocityManager velocityManager;
-  private IPrepareVelocityContext prepareVelocityContext;
-  private MessageService messageService;
   private VelocityContext velocityContext;
-  private TestMessagesController controller;
+  private MessagesController controller;
 
   @Before
-  public void prepareTest() {
-    velocityManager = createMock(VelocityManager.class);
-    prepareVelocityContext = createMock(IPrepareVelocityContext.class);
-    messageService = createMock(MessageService.class);
+  public void prepareTest() throws Exception {
+    registerComponentMocks(VelocityManager.class, IPrepareVelocityContext.class,
+        MessageService.class, UserService.class, IRightsAccessFacadeRole.class);
     velocityContext = new VelocityContext();
-    controller = new TestMessagesController(velocityManager, prepareVelocityContext,
-        messageService);
+    controller = getBeanTarget(MessagesController.class);
   }
 
   @Test
@@ -55,70 +53,57 @@ public class MessagesControllerTest {
 
   @Test
   public void testGetMessagesUsesPreparedExistingContext() throws Exception {
+    expectAnonymousAuth();
     expectPreparedContext();
-    expect(messageService.getMessages(same(velocityContext))).andReturn("{\"message\":\"value\"}");
-    replayAll();
+    expect(getMock(MessageService.class).getMessages(same(velocityContext)))
+        .andReturn("{\"message\":\"value\"}");
+    replayDefault();
 
     assertEquals("{\"message\":\"value\"}", controller.getMessages());
 
-    assertTrue(controller.isCheckAuthCalled());
-    verifyAll();
+    verifyDefault();
   }
 
   @Test
   public void testGetValidationMessagesUsesPreparedExistingContext() throws Exception {
+    expectAnonymousAuth();
     expectPreparedContext();
-    expect(messageService.getValidationMessages(same(velocityContext)))
+    expect(getMock(MessageService.class).getValidationMessages(same(velocityContext)))
         .andReturn("{\"required\":\"Required\"}");
-    replayAll();
+    replayDefault();
 
     assertEquals("{\"required\":\"Required\"}", controller.getValidationMessages());
 
-    assertTrue(controller.isCheckAuthCalled());
-    verifyAll();
+    verifyDefault();
   }
 
   @Test
   public void testServiceFailurePropagates() throws Exception {
+    expectAnonymousAuth();
     expectPreparedContext();
-    expect(messageService.getMessages(same(velocityContext))).andThrow(new IOException("failed"));
-    replayAll();
+    expect(getMock(MessageService.class).getMessages(same(velocityContext)))
+        .andThrow(new IOException("failed"));
+    replayDefault();
 
     assertThrows(IOException.class, controller::getMessages);
 
-    verifyAll();
+    verifyDefault();
   }
 
   private void expectPreparedContext() {
-    expect(velocityManager.getVelocityContext()).andReturn(velocityContext);
-    prepareVelocityContext.prepareVelocityContext(same(velocityContext));
+    expect(getMock(VelocityManager.class).getVelocityContext()).andReturn(velocityContext);
+    getMock(IPrepareVelocityContext.class).prepareVelocityContext(same(velocityContext));
   }
 
-  private void replayAll() {
-    replay(velocityManager, prepareVelocityContext, messageService);
+  private void expectAnonymousAuth() throws Exception {
+    expect(getMock(XWiki.class).checkAuth(getXContext())).andReturn(null);
   }
 
-  private void verifyAll() {
-    verify(velocityManager, prepareVelocityContext, messageService);
-  }
-
-  private static final class TestMessagesController extends MessagesController {
-
-    private boolean checkAuthCalled;
-
-    TestMessagesController(VelocityManager velocityManager,
-        IPrepareVelocityContext prepareVelocityContext, MessageService messageService) {
-      super(velocityManager, prepareVelocityContext, messageService);
-    }
-
-    @Override
-    protected Optional<User> checkAuth() {
-      checkAuthCalled = true;
-      return Optional.empty();
-    }
-
-    boolean isCheckAuthCalled() {
-      return checkAuthCalled;
-    }
+  @SuppressWarnings("unchecked")
+  private <T> T getBeanTarget(Class<T> beanClass) throws Exception {
+    T bean = getBeanFactory().getBean(beanClass);
+    return bean instanceof Advised advised
+        ? (T) advised.getTargetSource().getTarget()
+        : bean;
   }
 }

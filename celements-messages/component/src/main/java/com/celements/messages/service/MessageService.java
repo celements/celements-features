@@ -76,8 +76,11 @@ public class MessageService {
 
   private List<String> discoverFragments(String directory) {
     return Optional.ofNullable(servletContext.getResourcePaths(directory))
-        .orElseGet(Collections::emptySet).stream().filter(path -> isDirectFragment(directory, path))
-        .sorted().toList();
+        .orElseGet(Collections::emptySet)
+        .stream()
+        .filter(path -> isDirectFragment(directory, path))
+        .sorted()
+        .toList();
   }
 
   private boolean isDirectFragment(String directory, String path) {

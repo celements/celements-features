@@ -12,21 +12,19 @@ import org.springframework.stereotype.Component;
 import org.xwiki.script.service.ScriptService;
 import org.xwiki.velocity.VelocityManager;
 
+import com.celements.common.test.AbstractComponentTest;
 import com.celements.messages.service.MessageService;
 
-public class MessagesScriptServiceTest {
+public class MessagesScriptServiceTest extends AbstractComponentTest {
 
-  private VelocityManager velocityManager;
-  private MessageService messageService;
   private VelocityContext velocityContext;
   private MessagesScriptService scriptService;
 
   @Before
-  public void prepareTest() {
-    velocityManager = createMock(VelocityManager.class);
-    messageService = createMock(MessageService.class);
+  public void prepareTest() throws Exception {
+    registerComponentMocks(VelocityManager.class, MessageService.class);
     velocityContext = new VelocityContext();
-    scriptService = new MessagesScriptService(velocityManager, messageService);
+    scriptService = getBeanFactory().getBean(MessagesScriptService.class);
   }
 
   @Test
@@ -38,43 +36,37 @@ public class MessagesScriptServiceTest {
 
   @Test
   public void testGetMessagesUsesActiveExistingContext() throws Exception {
-    expect(velocityManager.getVelocityContext()).andReturn(velocityContext);
-    expect(messageService.getMessages(same(velocityContext))).andReturn("{\"message\":\"value\"}");
-    replayAll();
+    expect(getMock(VelocityManager.class).getVelocityContext()).andReturn(velocityContext);
+    expect(getMock(MessageService.class).getMessages(same(velocityContext)))
+        .andReturn("{\"message\":\"value\"}");
+    replayDefault();
 
     assertEquals("{\"message\":\"value\"}", scriptService.getMessages());
 
-    verifyAll();
+    verifyDefault();
   }
 
   @Test
   public void testGetValidationMessagesUsesActiveExistingContext() throws Exception {
-    expect(velocityManager.getVelocityContext()).andReturn(velocityContext);
-    expect(messageService.getValidationMessages(same(velocityContext)))
+    expect(getMock(VelocityManager.class).getVelocityContext()).andReturn(velocityContext);
+    expect(getMock(MessageService.class).getValidationMessages(same(velocityContext)))
         .andReturn("{\"required\":\"Required\"}");
-    replayAll();
+    replayDefault();
 
     assertEquals("{\"required\":\"Required\"}", scriptService.getValidationMessages());
 
-    verifyAll();
+    verifyDefault();
   }
 
   @Test
   public void testServiceFailurePropagates() throws Exception {
-    expect(velocityManager.getVelocityContext()).andReturn(velocityContext);
-    expect(messageService.getMessages(same(velocityContext))).andThrow(new IOException("failed"));
-    replayAll();
+    expect(getMock(VelocityManager.class).getVelocityContext()).andReturn(velocityContext);
+    expect(getMock(MessageService.class).getMessages(same(velocityContext)))
+        .andThrow(new IOException("failed"));
+    replayDefault();
 
     assertThrows(IOException.class, scriptService::getMessages);
 
-    verifyAll();
-  }
-
-  private void replayAll() {
-    replay(velocityManager, messageService);
-  }
-
-  private void verifyAll() {
-    verify(velocityManager, messageService);
+    verifyDefault();
   }
 }
