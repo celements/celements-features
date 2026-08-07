@@ -7,7 +7,7 @@
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>celements-user-manager</artifactId>
-  <version>7.1-SNAPSHOT</version>
+  <version>7.1</version>
   <description>Celements User Manager</description>
   <dependencies>
     <dependency>
@@ -163,6 +163,6 @@
     <connection>scm:git:git@github.com:celements/celements-features.git</connection>
     <developerConnection>scm:git:git@github.com:celements/celements-features.git</developerConnection>
     <url>https://github.com/celements/celements-features</url>
-    <tag>HEAD</tag>
+    <tag>celements-user-manager-7.1</tag>
   </scm>
 </project>
