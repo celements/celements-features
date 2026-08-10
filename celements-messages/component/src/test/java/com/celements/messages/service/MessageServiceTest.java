@@ -7,19 +7,16 @@ import java.io.IOException;
 import java.io.StringWriter;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.function.Consumer;
 
 import org.apache.velocity.VelocityContext;
 import org.junit.Before;
-import org.junit.ClassRule;
 import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
-import org.springframework.context.ConfigurableApplicationContext;
-import org.springframework.mock.web.MockServletContext;
 import org.springframework.util.FileSystemUtils;
-import org.springframework.web.context.ConfigurableWebApplicationContext;
 import org.xwiki.velocity.VelocityEngine;
 import org.xwiki.velocity.VelocityManager;
 import org.xwiki.velocity.XWikiVelocityException;
@@ -29,24 +26,16 @@ import com.celements.sajson.JsonBuilder;
 
 public class MessageServiceTest extends AbstractComponentTest {
 
-  @ClassRule
-  public static final TemporaryFolder temporaryFolder = new TemporaryFolder();
-
   private VelocityEngine velocityEngine;
   private VelocityContext velocityContext;
   private MessageService messageService;
   private List<String> evaluatedFragments;
-
-  @Override
-  protected void beforeSpringContextRefresh(ConfigurableApplicationContext context) {
-    super.beforeSpringContextRefresh(context);
-    ((ConfigurableWebApplicationContext) context).setServletContext(new MockServletContext(
-        "file:" + temporaryFolder.getRoot().getAbsolutePath()));
-  }
+  private Path webRoot;
 
   @Before
   public void prepareTest() throws Exception {
-    FileSystemUtils.deleteRecursively(temporaryFolder.getRoot().toPath().resolve("templates"));
+    webRoot = Path.of(Objects.requireNonNull(getClass().getResource("/")).toURI());
+    FileSystemUtils.deleteRecursively(webRoot.resolve("templates/celMessages"));
     registerComponentMocks(VelocityManager.class);
     velocityEngine = createDefaultMock(VelocityEngine.class);
     velocityContext = new VelocityContext();
@@ -175,7 +164,7 @@ public class MessageServiceTest extends AbstractComponentTest {
   }
 
   private void createFragment(String path) throws IOException {
-    var fragment = temporaryFolder.getRoot().toPath().resolve(path.substring(1));
+    var fragment = webRoot.resolve(path.substring(1));
     Files.createDirectories(fragment.getParent());
     Files.writeString(fragment, "fragment:" + path, StandardCharsets.UTF_8);
   }
