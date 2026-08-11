@@ -52,7 +52,8 @@ public class CelementsSimpleAnalyzer extends StopwordAnalyzerBase implements Cel
 
   @Override
   public String filterToken(String token) {
-    return StringUtils.stripAccents(nullToEmpty(token).toLowerCase());
+    token = nullToEmpty(token).toLowerCase();
+    return stopwords.contains(token) ? "" : StringUtils.stripAccents(token);
   }
 
 }

@@ -24,6 +24,7 @@ import com.celements.search.lucene.index.analysis.CelementsSimpleAnalyzer;
 import com.celements.search.lucene.query.IQueryRestriction;
 import com.celements.search.lucene.query.LuceneQuery;
 import com.celements.search.lucene.query.QueryRestriction;
+import com.celements.search.lucene.query.QueryRestriction.QueryMode;
 import com.celements.search.lucene.query.QueryRestrictionGroup;
 import com.celements.search.lucene.query.QueryRestrictionGroup.Type;
 import com.xpn.xwiki.XWiki;
@@ -207,6 +208,13 @@ public class LuceneSearchServiceTest extends AbstractComponentTest {
           searchService.createRestriction("Field", "Hänsôè", false).getQueryString());
       assertEquals("Field:(+hansoe*)",
           searchService.createRestriction("Field", "Hänsôè", true).getQueryString());
+      assertEquals("Field:(+forum* +wort* +musik*)",
+          searchService.createRestriction("Field", "Forum für Wort und Musik", true)
+              .getQueryString());
+      assertEquals("", searchService.createRestriction("Field", "für", true).getQueryString());
+      assertEquals("", searchService.createRestriction("Field", "für")
+          .setMode(QueryMode.EXACT).getQueryString());
+      assertEquals("", searchService.createRestriction("Field", "und", true).getQueryString());
       verifyDefault();
     }
   }
