@@ -24,7 +24,6 @@ import javax.inject.Inject;
 import javax.inject.Named;
 import javax.validation.constraints.NotNull;
 
-import org.apache.commons.lang.RandomStringUtils;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,6 +36,7 @@ import org.xwiki.query.Query;
 import org.xwiki.query.QueryException;
 import org.xwiki.query.QueryManager;
 
+import com.celements.auth.SecureRandomUtils;
 import com.celements.init.XWikiProvider;
 import com.celements.marshalling.ReferenceMarshaller;
 import com.celements.model.access.IModelAccessFacade;
@@ -217,7 +217,7 @@ public class CelementsUserService implements UserService {
       throws DocumentAccessException {
     userData.putIfAbsent(XWikiUsersClass.FIELD_ACTIVE.getName(), "0");
     userData.putIfAbsent(XWikiUsersClass.FIELD_PASSWORD.getName(),
-        RandomStringUtils.randomAlphanumeric(24));
+        SecureRandomUtils.randomAlphanumeric(24));
     try {
       BaseObject userObject = XWikiObjectEditor.on(userDoc).filter(usersClass).createFirst();
       xwiki.get()
