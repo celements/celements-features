@@ -23,6 +23,7 @@ import com.celements.search.lucene.index.queue.QueueTask;
 import com.google.common.collect.ImmutableList;
 import com.xpn.xwiki.doc.XWikiAttachment;
 import com.xpn.xwiki.doc.XWikiDocument;
+import com.xpn.xwiki.plugin.lucene.TestXWikiDocument;
 import com.xpn.xwiki.web.Utils;
 
 public class QueueDocumentEventConverterTest extends AbstractComponentTest {
@@ -97,6 +98,39 @@ public class QueueDocumentEventConverterTest extends AbstractComponentTest {
     expect(getMock(ILuceneIndexService.class).indexTask(docRef)).andReturn(docTask);
     QueueTask attTask = createQueueTaskMock(IndexQueuePriority.LOW);
     expect(getMock(ILuceneIndexService.class).indexTask(attRef)).andReturn(attTask);
+
+    replayDefault(docTask, attTask);
+    listener.onEvent(new DocumentUpdatedEvent(), doc, null);
+    verifyDefault(docTask, attTask);
+  }
+
+  @Test
+  public void test_onEvent_updated_withAtts_unchangedDocumentData() throws Exception {
+    DocumentReference docRef = new DocumentReference("wiki", "space", "doc");
+    XWikiDocument doc = new TestXWikiDocument(docRef);
+    doc.setOriginalDocument(new TestXWikiDocument(docRef));
+    doc.setAttachmentList(ImmutableList.of(new XWikiAttachment(doc, "file")));
+    QueueTask docTask = createQueueTaskMock(null);
+    expect(getMock(ILuceneIndexService.class).indexTask(docRef)).andReturn(docTask);
+
+    replayDefault(docTask);
+    listener.onEvent(new DocumentUpdatedEvent(), doc, null);
+    verifyDefault(docTask);
+  }
+
+  @Test
+  public void test_onEvent_updated_withAtts_changedDocumentData() throws Exception {
+    DocumentReference docRef = new DocumentReference("wiki", "space", "doc");
+    TestXWikiDocument doc = new TestXWikiDocument(docRef);
+    TestXWikiDocument original = new TestXWikiDocument(docRef);
+    doc.setOriginalDocument(original);
+    doc.setTitle("new title");
+    doc.setAttachmentList(ImmutableList.of(new XWikiAttachment(doc, "file")));
+    QueueTask docTask = createQueueTaskMock(null);
+    expect(getMock(ILuceneIndexService.class).indexTask(docRef)).andReturn(docTask);
+    QueueTask attTask = createQueueTaskMock(IndexQueuePriority.LOW);
+    expect(getMock(ILuceneIndexService.class).indexTask(new AttachmentReference("file", docRef)))
+        .andReturn(attTask);
 
     replayDefault(docTask, attTask);
     listener.onEvent(new DocumentUpdatedEvent(), doc, null);

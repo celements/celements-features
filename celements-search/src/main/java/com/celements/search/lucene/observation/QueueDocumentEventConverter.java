@@ -14,6 +14,7 @@ import org.xwiki.model.EntityType;
 import org.xwiki.model.reference.AttachmentReference;
 import org.xwiki.model.reference.EntityReference;
 import org.xwiki.observation.event.Event;
+import org.xwiki.rendering.syntax.Syntax;
 
 import com.celements.search.lucene.index.queue.IndexQueuePriority;
 import com.google.common.collect.ImmutableList;
@@ -44,11 +45,35 @@ public class QueueDocumentEventConverter extends AbstractQueueEventConverter<XWi
 
   @Override
   protected Stream<EntityReference> getReferences(Event event, XWikiDocument doc) {
+    Stream<EntityReference> docRef = Stream.of(
+        new QueueLangDocumentReference(doc.getDocumentReference(), doc.getLanguage()));
+    if ((event instanceof DocumentUpdatedEvent) && hasSameAttachmentDocumentData(doc)) {
+      return docRef;
+    }
     return Stream.concat(
-        Stream.of(new QueueLangDocumentReference(doc.getDocumentReference(), doc.getLanguage())),
+        docRef,
         doc.getAttachmentList().stream()
             .filter(Objects::nonNull)
             .map(att -> new AttachmentReference(att.getFilename(), doc.getDocumentReference())));
+  }
+
+  private boolean hasSameAttachmentDocumentData(XWikiDocument doc) {
+    XWikiDocument original = doc.getOriginalDocument();
+    try {
+      return (original != null)
+          && Objects.equals(doc.getDocumentReference(), original.getDocumentReference())
+          && Objects.equals(doc.getLanguage(), original.getLanguage())
+          && Objects.equals(doc.isHidden(), original.isHidden())
+          && Objects.equals(getRenderedTitle(doc), getRenderedTitle(original));
+    } catch (RuntimeException exc) {
+      LOGGER.warn("failed to compare attachment document data for [{}]", doc.getDocumentReference(),
+          exc);
+      return false;
+    }
+  }
+
+  private String getRenderedTitle(XWikiDocument doc) {
+    return doc.getRenderedTitle(Syntax.PLAIN_1_0, context.getXWikiContext());
   }
 
   @Override
