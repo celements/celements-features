@@ -6,12 +6,12 @@ import java.util.List;
 import javax.inject.Inject;
 import javax.validation.constraints.NotNull;
 
-import org.apache.commons.lang.RandomStringUtils;
 import org.springframework.stereotype.Component;
 import org.xwiki.model.reference.DocumentReference;
 import org.xwiki.model.reference.EntityReference;
 import org.xwiki.observation.event.Event;
 
+import com.celements.auth.SecureRandomUtils;
 import com.celements.auth.user.UserPageType;
 import com.celements.common.observation.listener.AbstractLocalEventListener;
 import com.celements.model.object.xwiki.XWikiObjectEditor;
@@ -93,7 +93,7 @@ public class EnsureConsistentUserStateListener
         .filter(XWikiUsersClass.CLASS_REF)
         .filterAbsent(XWikiUsersClass.FIELD_PASSWORD)
         .editField(XWikiUsersClass.FIELD_PASSWORD)
-        .first(RandomStringUtils.randomAlphanumeric(24));
+        .first(SecureRandomUtils.randomAlphanumeric(24));
   }
 
   private XWikiUser asXWikiUser(DocumentReference userDocRef) {
