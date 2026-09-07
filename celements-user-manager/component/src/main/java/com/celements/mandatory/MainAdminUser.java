@@ -1,10 +1,8 @@
 package com.celements.mandatory;
 
-import static com.celements.common.lambda.LambdaExceptionUtil.*;
-import static java.util.function.Predicate.*;
+import static com.xpn.xwiki.XWikiConstant.*;
 
 import java.util.List;
-import java.util.Optional;
 
 import javax.inject.Inject;
 
@@ -15,19 +13,16 @@ import org.xwiki.model.reference.ClassReference;
 import org.xwiki.model.reference.DocumentReference;
 
 import com.celements.auth.AuthenticationService;
+import com.celements.auth.MainAdminConfig;
+import com.celements.auth.SecureRandomUtils;
 import com.celements.auth.user.UserInstantiationException;
 import com.celements.auth.user.UserService;
 import com.celements.model.access.exception.DocumentSaveException;
-import com.celements.model.reference.RefBuilder;
-import com.xpn.xwiki.XWikiConstant;
 import com.xpn.xwiki.XWikiException;
 import com.xpn.xwiki.doc.XWikiDocument;
 
 @Component("celements.mandatory.MainAdminUser")
 public class MainAdminUser extends AbstractMandatoryDocument {
-
-  public static final String ADMIN_DOC_NAME = "Admin";
-  public static final String CFG_KEY_ADMIN_PASSWORD = "main.admin.password";
 
   private static final Logger LOGGER = LoggerFactory.getLogger(MainAdminUser.class);
 
@@ -36,6 +31,9 @@ public class MainAdminUser extends AbstractMandatoryDocument {
 
   @Inject
   private AuthenticationService authService;
+
+  @Inject
+  private MainAdminConfig config;
 
   @Override
   public String getName() {
@@ -51,12 +49,12 @@ public class MainAdminUser extends AbstractMandatoryDocument {
 
   @Override
   protected DocumentReference getDocRef() {
-    return getAdminUserDocRef();
+    return config.getUserDocRef();
   }
 
   @Override
   protected boolean isEnabledByDefault() {
-    return getAdminPassword().isPresent();
+    return config.isAutoLoginEnabled() || config.getPassword().isPresent();
   }
 
   @Override
@@ -72,9 +70,11 @@ public class MainAdminUser extends AbstractMandatoryDocument {
   @Override
   protected boolean checkDocumentsMain(XWikiDocument doc) throws XWikiException {
     try {
-      var adminUser = userService.getUser(getAdminUserDocRef());
-      getAdminPassword().ifPresent(rethrowConsumer(password -> authService
-          .enableUser(adminUser, password, false)));
+      var adminUser = userService.getUser(config.getUserDocRef());
+      if (isEnabledByDefault()) {
+        var password = config.getPassword().orElseGet(() -> SecureRandomUtils.randomAlphanumeric(24));
+        authService.enableUser(adminUser, password, false);
+      }
       userService.addUserToGroup(adminUser, getAdminGroupRef());
       return false; // safe already handled
     } catch (UserInstantiationException | DocumentSaveException exc) {
@@ -82,21 +82,8 @@ public class MainAdminUser extends AbstractMandatoryDocument {
     }
   }
 
-  Optional<String> getAdminPassword() {
-    String password = xwikiPropConfigSource.getProperty(CFG_KEY_ADMIN_PASSWORD, "");
-    return Optional.ofNullable(password).map(String::trim).filter(not(String::isEmpty));
-  }
-
-  private DocumentReference getAdminUserDocRef() {
-    return new RefBuilder()
-        .with(modelContext.getWikiRef())
-        .space(XWikiConstant.XWIKI_SPACE)
-        .doc(ADMIN_DOC_NAME)
-        .build(DocumentReference.class);
-  }
-
   private ClassReference getAdminGroupRef() {
-    return new ClassReference(XWikiConstant.XWIKI_SPACE, "XWikiAdminGroup");
+    return new ClassReference(XWIKI_SPACE, "XWikiAdminGroup");
   }
 
   @Override

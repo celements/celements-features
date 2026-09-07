@@ -8,7 +8,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
-import org.apache.commons.lang.RandomStringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xwiki.component.annotation.Component;
@@ -85,7 +84,7 @@ public class AuthenticationService implements IAuthenticationServiceRole {
           .filter(not(User::isSuspended));
       LOGGER.debug("activateAccount: user = {}", user);
       if (user.isPresent()) {
-        String password = RandomStringUtils.randomAlphanumeric(24);
+        String password = SecureRandomUtils.randomAlphanumeric(24);
         enableUser(user.get(), password, true);
         Map<String, String> userAccount = new HashMap<>();
         userAccount.put("username", modelUtils.serializeRefLocal(user.get().getDocRef()));
@@ -148,7 +147,7 @@ public class AuthenticationService implements IAuthenticationServiceRole {
         Query.XWQL).<String>execute());
     String validkey;
     do {
-      validkey = RandomStringUtils.randomAlphanumeric(24);
+      validkey = SecureRandomUtils.randomAlphanumeric(24);
     } while (existingKeys.contains(validkey));
     return validkey;
   }
