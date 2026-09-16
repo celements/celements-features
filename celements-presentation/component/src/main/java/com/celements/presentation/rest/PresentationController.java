@@ -50,13 +50,13 @@ public class PresentationController extends AuthenticatedBaseController {
 
     @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiResponses({
-            @ApiResponse(responseCode = "200", content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = PresentationResponse.class))),
+            @ApiResponse(responseCode = "200"),
             @ApiResponse(responseCode = "400", description = "Controlled invalid_presentation_reference or "
                     + "invalid_navigation_number error. Framework-generated 400 responses do not "
-                    + "guarantee this schema.", content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = ErrorResponse.class))),
-            @ApiResponse(responseCode = "404", description = "Controlled presentation_not_found error.", content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = ErrorResponse.class))) })
+                    + "guarantee this schema.", content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "404", description = "Controlled presentation_not_found error.", content = @Content(schema = @Schema(implementation = ErrorResponse.class))) })
     public ResponseEntity<PresentationResponse> getPresentation(
-            @Parameter(required = true, schema = @Schema(type = "string")) @RequestParam("presentationConfigFullName") List<String> configNames,
+            @Parameter(schema = @Schema(type = "string")) @RequestParam("presentationConfigFullName") List<String> configNames,
             @RequestParam(name = "language", required = false) String language,
             @Parameter(schema = @Schema(type = "integer", defaultValue = "1", minimum = "1")) @RequestParam(name = "navigationNumber", defaultValue = "1") int navigationNumber) {
         return success(service.getPresentation(configNames, navigationNumber));
@@ -64,16 +64,16 @@ public class PresentationController extends AuthenticatedBaseController {
 
     @GetMapping(value = "/slides", produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiResponses({
-            @ApiResponse(responseCode = "200", content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = RenderedPresentationResponse.class))),
+            @ApiResponse(responseCode = "200"),
             @ApiResponse(responseCode = "400", description = "Controlled invalid_presentation_reference, invalid_slide_selection, "
                     + "invalid_render_type, or invalid_navigation_number error. Framework-generated "
-                    + "400 responses do not guarantee this schema.", content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = ErrorResponse.class))),
-            @ApiResponse(responseCode = "404", description = "Controlled presentation_not_found or slide_not_found error.", content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = ErrorResponse.class))),
-            @ApiResponse(responseCode = "500", description = "Controlled rendering_failed error.", content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = ErrorResponse.class))) })
+                    + "400 responses do not guarantee this schema.", content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "404", description = "Controlled presentation_not_found or slide_not_found error.", content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "500", description = "Controlled rendering_failed error.", content = @Content(schema = @Schema(implementation = ErrorResponse.class))) })
     public ResponseEntity<RenderedPresentationResponse> renderSlides(
-            @Parameter(required = true, schema = @Schema(type = "string")) @RequestParam("presentationConfigFullName") List<String> configNames,
-            @Parameter(required = true, array = @ArraySchema(schema = @Schema(type = "string"), minItems = 1, uniqueItems = true)) @RequestParam("slideFullName") List<String> slideNames,
-            @Parameter(required = true, schema = @Schema(type = "string", allowableValues = { "renderedContent",
+            @Parameter(schema = @Schema(type = "string")) @RequestParam("presentationConfigFullName") List<String> configNames,
+            @Parameter(array = @ArraySchema(schema = @Schema(type = "string"), minItems = 1, uniqueItems = true)) @RequestParam("slideFullName") List<String> slideNames,
+            @Parameter(schema = @Schema(type = "string", allowableValues = { "renderedContent",
                     "renderedExtract" })) @RequestParam("renderType") List<String> renderTypes,
             @RequestParam(name = "language", required = false) String language,
             @Parameter(schema = @Schema(type = "integer", defaultValue = "1", minimum = "1")) @RequestParam(name = "navigationNumber", defaultValue = "1") int navigationNumber) {
