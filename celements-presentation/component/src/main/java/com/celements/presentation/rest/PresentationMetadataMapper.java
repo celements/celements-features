@@ -63,10 +63,10 @@ public class PresentationMetadataMapper {
                             .orElseThrow(() -> PresentationException.notFound("slide_not_found",
                                     "Visible presentation member became unavailable during metadata mapping")));
             String fullName = modelUtils.serializeRefLocal(slideRef);
-            NavigationItemContext itemContext = new NavigationItemContext(slideRef,
-                    ContainerCssClasses.INCLUDE, getPosition(index, size),
-                    slideListService.isLeaf(slideRef) ? ChildState.LEAF : ChildState.HAS_CHILDREN,
-                    position, ContextualState.OMIT);
+            NavigationItemContext itemContext = new NavigationItemContext(slideRef, ContainerCssClasses.INCLUDE,
+                    getPosition(index, size),
+                    slideListService.isLeaf(slideRef) ? ChildState.LEAF : ChildState.HAS_CHILDREN, position,
+                    ContextualState.OMIT);
             responses.add(new SlideResponse(fullName, slideRef.getName(), resolveMenuLabel(fullName, language),
                     slideDoc.getTitle(), navigation.getUniqueId(slideRef), pageLayout,
                     navigation.getCssClassTokens(itemContext)));
@@ -80,6 +80,7 @@ public class PresentationMetadataMapper {
         INavigation navigation = new Navigation("N" + navigationNumber);
         navigation.setNodeSpace(definition.menuSpace());
         navigation.setNavFilter(filter);
+        navigation.setPresentationType(definition.presentationType());
         navigation.setCMcssClass(definition.cssClass());
         return navigation;
     }

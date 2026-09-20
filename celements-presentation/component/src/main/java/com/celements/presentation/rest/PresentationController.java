@@ -89,8 +89,7 @@ public class PresentationController extends AuthenticatedBaseController {
 
     static void logPresentationException(Logger logger, PresentationException exc) {
         if (exc.getStatus().is5xxServerError()) {
-            logger.error("Controlled presentation REST failure [{}]: {}", exc.getCode(), exc.getDiagnosticContext(),
-                    exc.getCause());
+            logger.error("Controlled presentation REST failure [{}]: {}", exc.getCode(), exc.getDiagnosticContext());
         } else {
             logger.info("Controlled presentation REST failure [{}]: {}", exc.getCode(), exc.getDiagnosticContext());
         }

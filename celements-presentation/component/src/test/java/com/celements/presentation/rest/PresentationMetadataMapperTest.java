@@ -48,7 +48,7 @@ public class PresentationMetadataMapperTest {
     private DocumentReference secondRef;
 
     @Before
-    public void setUp() {
+    public void prepareTest() {
         modelAccess = createMock(IModelAccessFacade.class);
         context = createMock(ModelContext.class);
         modelUtils = createMock(ModelUtils.class);
@@ -67,7 +67,7 @@ public class PresentationMetadataMapperTest {
     }
 
     @Test
-    public void map_resolvesEffectiveLanguageMetadataAndFilteredPositions() {
+    public void test_map_resolvesEffectiveLanguageMetadataAndFilteredPositions() {
         XWikiContext xwikiContext = new XWikiContext();
         xwikiContext.setLanguage("de");
         expect(context.getXWikiContext()).andReturn(xwikiContext).times(2);

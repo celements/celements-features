@@ -51,6 +51,7 @@ public class PresentationBatchRendererTest {
     private ModelUtils modelUtils;
     private INavigation navigation;
     private PresentationContentRenderer renderer;
+    private Execution execution;
     private PresentationBatchRenderer batchRenderer;
     private DocumentReference firstRef;
     private DocumentReference secondRef;
@@ -64,12 +65,12 @@ public class PresentationBatchRendererTest {
     }
 
     @Before
-    public void setUp() {
+    public void prepareTest() {
         componentManager = createMock(ComponentManager.class);
         modelUtils = createMock(ModelUtils.class);
         navigation = createMock(INavigation.class);
         renderer = createMock(PresentationContentRenderer.class);
-        Execution execution = createMock(Execution.class);
+        execution = createMock(Execution.class);
         executionContext = new ExecutionContext();
         originalContext = new XWikiContext();
         originalVelocityContext = new VelocityContext();
@@ -86,7 +87,7 @@ public class PresentationBatchRendererTest {
     }
 
     @Test
-    public void render_isolatesFullContextForEverySlideAndPreservesRequestOrder() throws Exception {
+    public void test_render_isolatesFullContextForEverySlideAndPreservesRequestOrder() throws Exception {
         expect(componentManager.lookup(PresentationContentRenderer.class, renderType.componentHint()))
                 .andReturn(renderer);
         expect(modelUtils.serializeRefLocal(firstRef)).andReturn("Content.First");
@@ -105,11 +106,11 @@ public class PresentationBatchRendererTest {
         assertSame(originalVelocityContext, executionContext.getProperty("velocityContext"));
         assertFalse(originalContext.containsKey("slideLeak"));
         assertFalse(originalVelocityContext.containsKey("slideLeak"));
-        verify(componentManager, modelUtils, navigation, renderer);
+        verify(componentManager, modelUtils, navigation, renderer, execution);
     }
 
     @Test
-    public void render_failureIsAtomicAndRestoresContexts() throws Exception {
+    public void test_render_failureIsAtomicAndRestoresContexts() throws Exception {
         expect(componentManager.lookup(PresentationContentRenderer.class, renderType.componentHint()))
                 .andReturn(renderer);
         expect(modelUtils.serializeRefLocal(firstRef)).andReturn("Content.First");
@@ -131,7 +132,7 @@ public class PresentationBatchRendererTest {
         }
         assertSame(originalContext, executionContext.getProperty(XWIKI_CONTEXT.getName()));
         assertSame(originalVelocityContext, executionContext.getProperty("velocityContext"));
-        verify(componentManager, modelUtils, navigation, renderer);
+        verify(componentManager, modelUtils, navigation, renderer, execution);
     }
 
     private String renderAndMutate(AtomicInteger invocation) {

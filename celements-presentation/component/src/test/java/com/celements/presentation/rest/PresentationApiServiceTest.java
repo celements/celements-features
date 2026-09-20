@@ -45,7 +45,7 @@ public class PresentationApiServiceTest {
     private List<TreeNode> slides;
 
     @Before
-    public void setUp() {
+    public void prepareTest() {
         modelUtils = createMock(ModelUtils.class);
         context = createMock(ModelContext.class);
         batchRenderer = createMock(PresentationBatchRenderer.class);
@@ -64,7 +64,7 @@ public class PresentationApiServiceTest {
     }
 
     @Test
-    public void getPresentation_validEmptyPresentationReturnsEnvelope() {
+    public void test_getPresentation_validEmptyPresentationReturnsEnvelope() {
         requestResolver.validateNavigationNumber(1);
         expect(requestResolver.resolvePresentationReference(List.of("Content.WebHome"))).andReturn(configRef);
         expect(configReader.read(configRef)).andReturn(definition);
@@ -86,7 +86,7 @@ public class PresentationApiServiceTest {
     }
 
     @Test
-    public void renderSlides_validatesCompleteSelectionThenPreservesRequestedOrder() {
+    public void test_renderSlides_validatesCompleteSelectionThenPreservesRequestedOrder() {
         requestResolver.validateNavigationNumber(1);
         List<DocumentReference> requestOrder = List.of(secondRef, firstRef);
         List<RenderedSlideResponse> rendered = List.of(
@@ -116,7 +116,7 @@ public class PresentationApiServiceTest {
     }
 
     @Test
-    public void renderSlides_invalidMemberStopsBeforeRenderingAtomically() {
+    public void test_renderSlides_invalidMemberStopsBeforeRenderingAtomically() {
         requestResolver.validateNavigationNumber(7);
         List<DocumentReference> requested = List.of(firstRef, secondRef);
         expect(requestResolver.resolvePresentationReference(List.of("Content.WebHome"))).andReturn(configRef);

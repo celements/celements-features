@@ -31,7 +31,7 @@ public class PresentationRequestResolverTest {
     private WikiReference wikiRef;
 
     @Before
-    public void setUp() {
+    public void prepareTest() {
         modelUtils = createMock(ModelUtils.class);
         context = createMock(ModelContext.class);
         resolver = new PresentationRequestResolver(modelUtils, context);
@@ -39,7 +39,7 @@ public class PresentationRequestResolverTest {
     }
 
     @Test
-    public void resolvePresentationReference_acceptsCanonicalLocalReference() {
+    public void test_resolvePresentationReference_acceptsCanonicalLocalReference() {
         DocumentReference docRef = new DocumentReference("xwiki", "Content", "WebHome");
         expect(context.getWikiRef()).andReturn(wikiRef).times(2);
         expect(modelUtils.resolveRef("Content.WebHome", DocumentReference.class, wikiRef)).andReturn(docRef);
@@ -50,13 +50,13 @@ public class PresentationRequestResolverTest {
     }
 
     @Test
-    public void resolvePresentationReference_rejectsRepeatedReference() {
+    public void test_resolvePresentationReference_rejectsRepeatedReference() {
         assertError("invalid_presentation_reference",
                 () -> resolver.resolvePresentationReference(List.of("Content.WebHome", "Content.Other")));
     }
 
     @Test
-    public void resolvePresentationReference_rejectsBlankAndMalformedReference() {
+    public void test_resolvePresentationReference_rejectsBlankAndMalformedReference() {
         expect(context.getWikiRef()).andReturn(wikiRef);
         expect(modelUtils.resolveRef("malformed[", DocumentReference.class, wikiRef))
                 .andThrow(new IllegalArgumentException("malformed"));
@@ -70,7 +70,7 @@ public class PresentationRequestResolverTest {
     }
 
     @Test
-    public void resolvePresentationReference_rejectsNonCanonicalAndCrossWikiReference() {
+    public void test_resolvePresentationReference_rejectsNonCanonicalAndCrossWikiReference() {
         DocumentReference localRef = new DocumentReference("xwiki", "Content", "WebHome");
         DocumentReference crossWikiRef = new DocumentReference("other", "Content", "WebHome");
         expect(context.getWikiRef()).andReturn(wikiRef).times(4);
@@ -87,7 +87,7 @@ public class PresentationRequestResolverTest {
     }
 
     @Test
-    public void resolvePresentationReference_rejectsExplicitCurrentWiki() {
+    public void test_resolvePresentationReference_rejectsExplicitCurrentWiki() {
         DocumentReference docRef = new DocumentReference("xwiki", "Content", "WebHome");
         expect(context.getWikiRef()).andReturn(wikiRef).times(2);
         expect(modelUtils.resolveRef("xwiki:Content.WebHome", DocumentReference.class, wikiRef)).andReturn(docRef);
@@ -99,7 +99,7 @@ public class PresentationRequestResolverTest {
     }
 
     @Test
-    public void resolveSlideReferences_rejectsDuplicates() {
+    public void test_resolveSlideReferences_rejectsDuplicates() {
         DocumentReference docRef = new DocumentReference("xwiki", "Content", "Slide");
         expect(context.getWikiRef()).andReturn(wikiRef).times(4);
         expect(modelUtils.resolveRef("Content.Slide", DocumentReference.class, wikiRef)).andReturn(docRef).times(2);
@@ -111,7 +111,7 @@ public class PresentationRequestResolverTest {
     }
 
     @Test
-    public void resolveSlideReferences_rejectsEmptyAndBlankSelection() {
+    public void test_resolveSlideReferences_rejectsEmptyAndBlankSelection() {
         replay(modelUtils, context);
         assertError("invalid_slide_selection", () -> resolver.resolveSlideReferences(List.of()));
         assertError("invalid_slide_selection", () -> resolver.resolveSlideReferences(List.of("")));
@@ -119,7 +119,7 @@ public class PresentationRequestResolverTest {
     }
 
     @Test
-    public void resolveRenderType_isExactAndSingular() {
+    public void test_resolveRenderType_isExactAndSingular() {
         assertSame(PresentationRenderType.RENDERED_CONTENT, resolver.resolveRenderType(List.of("renderedContent")));
         assertSame(PresentationRenderType.RENDERED_EXTRACT, resolver.resolveRenderType(List.of("renderedExtract")));
         PresentationException invalidValue = assertError("invalid_render_type",
@@ -130,7 +130,7 @@ public class PresentationRequestResolverTest {
     }
 
     @Test
-    public void validateNavigationNumber_requiresPositiveValue() {
+    public void test_validateNavigationNumber_requiresPositiveValue() {
         resolver.validateNavigationNumber(1);
         resolver.validateNavigationNumber(Integer.MAX_VALUE);
         PresentationException invalid = assertError("invalid_navigation_number",

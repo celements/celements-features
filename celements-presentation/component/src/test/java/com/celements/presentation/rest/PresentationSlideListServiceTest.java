@@ -41,7 +41,7 @@ public class PresentationSlideListServiceTest {
     private PresentationDefinition definition;
 
     @Before
-    public void setUp() {
+    public void prepareTest() {
         modelAccess = createMock(IModelAccessFacade.class);
         treeNodeService = createMock(ITreeNodeService.class);
         service = new PresentationSlideListService(modelAccess, treeNodeService);
@@ -51,7 +51,7 @@ public class PresentationSlideListServiceTest {
     }
 
     @Test
-    public void getVisibleSlides_honorsSpaceAndPartPreservesOrderAndDropsUnavailable() {
+    public void test_getVisibleSlides_honorsSpaceAndPartPreservesOrderAndDropsUnavailable() {
         DocumentReference firstRef = new DocumentReference("xwiki", "Content", "First");
         DocumentReference missingRef = new DocumentReference("xwiki", "Content", "Missing");
         DocumentReference lastRef = new DocumentReference("xwiki", "Content", "Last");
@@ -74,7 +74,7 @@ public class PresentationSlideListServiceTest {
     }
 
     @Test
-    public void isLeaf_checksRightsVisibleChildrenWithBlankPart() {
+    public void test_isLeaf_checksRightsVisibleChildrenWithBlankPart() {
         DocumentReference slideRef = new DocumentReference("xwiki", "Content", "Slide");
         DocumentReference childRef = new DocumentReference("xwiki", "Content", "Child");
         Capture<INavFilter<Object>> filterCapture = Capture.newInstance(CaptureType.FIRST);
@@ -88,7 +88,7 @@ public class PresentationSlideListServiceTest {
     }
 
     @Test
-    public void validateSelection_rejectsWholeBatchWhenOneSlideIsNotMember() {
+    public void test_validateSelection_rejectsWholeBatchWhenOneSlideIsNotMember() {
         DocumentReference memberRef = new DocumentReference("xwiki", "Content", "Member");
         DocumentReference outsiderRef = new DocumentReference("xwiki", "Content", "Outsider");
         try {

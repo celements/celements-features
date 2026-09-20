@@ -27,13 +27,13 @@ public class PresentationComponentRegistrationTest extends AbstractComponentTest
     }
 
     @Before
-    public void registerExternalControllerDependency() {
+    public void prepareTest() {
         ((DefaultListableBeanFactory) getBeanFactory()).registerResolvableDependency(UserService.class,
                 createNiceMock(UserService.class));
     }
 
     @Test
-    public void controllerAndProductionServiceGraphResolveFromWebContext() {
+    public void test_controllerAndProductionServiceGraphResolveFromWebContext() {
         assertNotNull(getBeanFactory().getBean(PresentationController.class));
         assertNotNull(getBeanFactory().getBean(PresentationApiService.class));
         assertNotNull(getBeanFactory().getBean(PresentationBatchRenderer.class));

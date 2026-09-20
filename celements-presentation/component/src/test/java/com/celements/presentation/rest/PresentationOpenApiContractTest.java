@@ -57,7 +57,7 @@ public class PresentationOpenApiContractTest {
     }
 
     @Test
-    public void apiDocsExposeBothPresentationOperations() throws Exception {
+    public void test_apiDocsExposeBothPresentationOperations() throws Exception {
         var result = mockMvc.perform(get("/api/v3/api-docs").servletPath("/api")).andExpect(status().isOk())
                 .andReturn();
         JsonNode api = objectMapper.readTree(result.getResponse().getContentAsByteArray());

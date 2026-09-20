@@ -28,8 +28,6 @@ import com.xpn.xwiki.objects.BaseObject;
 @Component
 public class PresentationConfigReader {
 
-    static final String DEFAULT_CSS_CLASS = "cel_cm_presentation_treenode";
-
     private final IModelAccessFacade modelAccess;
     private final IRightsAccessFacadeRole rightsAccess;
     private final ModelUtils modelUtils;
@@ -67,8 +65,8 @@ public class PresentationConfigReader {
         String configuredType = configObject.getStringValue(INavigationClassConfig.PRESENTATION_TYPE_FIELD).trim();
         String presentationType = configuredType.isEmpty() ? "default" : configuredType;
         String configuredCssClass = config.getCssClass().trim();
-        String cssClass = configuredCssClass.isEmpty() ? DEFAULT_CSS_CLASS : configuredCssClass;
-        return new PresentationDefinition(configRef, menuSpace, config.getMenuPart(), presentationType, cssClass);
+        return new PresentationDefinition(configRef, menuSpace, config.getMenuPart(), presentationType,
+                configuredCssClass);
     }
 
     private PresentationException unavailable(String configName, String reason) {

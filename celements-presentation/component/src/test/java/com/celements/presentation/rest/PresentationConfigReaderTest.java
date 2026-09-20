@@ -13,16 +13,13 @@ import static org.easymock.EasyMock.verify;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import org.junit.Before;
 import org.junit.Test;
-import org.xwiki.model.reference.ClassReference;
 import org.xwiki.model.reference.DocumentReference;
 import org.xwiki.model.reference.SpaceReference;
 import org.xwiki.model.reference.WikiReference;
 
+import com.celements.common.test.AbstractComponentTest;
 import com.celements.model.access.IModelAccessFacade;
 import com.celements.model.util.ModelUtils;
 import com.celements.navigation.INavigationClassConfig;
@@ -33,7 +30,7 @@ import com.celements.rights.access.IRightsAccessFacadeRole;
 import com.xpn.xwiki.doc.XWikiDocument;
 import com.xpn.xwiki.objects.BaseObject;
 
-public class PresentationConfigReaderTest {
+public class PresentationConfigReaderTest extends AbstractComponentTest {
 
     private IModelAccessFacade modelAccess;
     private IRightsAccessFacadeRole rightsAccess;
@@ -43,36 +40,22 @@ public class PresentationConfigReaderTest {
     private PresentationConfigReader reader;
     private DocumentReference configRef;
     private DocumentReference classRef;
-    private List<BaseObject> configObjects;
-    private SpaceReference explicitMenuSpace;
 
     @Before
-    public void setUpReader() {
+    public void prepareTest() {
         modelAccess = createMock(IModelAccessFacade.class);
         rightsAccess = createMock(IRightsAccessFacadeRole.class);
         modelUtils = createMock(ModelUtils.class);
         navigationClassConfig = createMock(INavigationClassConfig.class);
         navigationFactory = createMock(NavigationFactory.class);
-        configObjects = new ArrayList<>();
         reader = new PresentationConfigReader(modelAccess, rightsAccess, modelUtils, navigationClassConfig,
-                navigationFactory) {
-
-            @Override
-            BaseObject findFirstConfigObject(XWikiDocument configDoc, ClassReference requestedClassRef) {
-                return configObjects.stream().findFirst().orElse(null);
-            }
-
-            @Override
-            SpaceReference resolveMenuSpace(NavigationConfig config, DocumentReference requestedRef) {
-                return explicitMenuSpace != null ? explicitMenuSpace : super.resolveMenuSpace(config, requestedRef);
-            }
-        };
+                navigationFactory);
         configRef = new DocumentReference("xwiki", "Config", "WebHome");
         classRef = new DocumentReference("xwiki", "Celements2", "NavigationConfigClass");
     }
 
     @Test
-    public void read_missingAndInaccessibleUseSamePublicError() {
+    public void test_read_missingAndInaccessibleUseSamePublicError() {
         expect(modelUtils.serializeRefLocal(configRef)).andReturn("Config.WebHome").times(2);
         expect(modelAccess.exists(configRef)).andReturn(false).andReturn(true);
         expect(rightsAccess.hasAccessLevel(configRef, EAccessLevel.VIEW)).andReturn(false);
@@ -83,7 +66,7 @@ public class PresentationConfigReaderTest {
     }
 
     @Test
-    public void read_usesFirstObjectAndDefaultsWhileIgnoringHierarchyAndPagingFields() {
+    public void test_read_usesFirstObjectAndDefaultsWhileIgnoringHierarchyAndPagingFields() {
         XWikiDocument doc = configDocument("  renderedContentDynLoad  ", "ignoredLater");
         NavigationConfig config = new NavigationConfig.Builder().menuPart("homepage").layoutType("grid")
                 .fromHierarchyLevel(5).toHierarchyLevel(9).showInactiveToLevel(8).nrOfItemsPerPage(2).build();
@@ -94,18 +77,16 @@ public class PresentationConfigReaderTest {
         assertEquals(configRef.getLastSpaceReference(), result.menuSpace());
         assertEquals("homepage", result.menuPart());
         assertEquals("renderedContentDynLoad", result.presentationType());
-        assertEquals(PresentationConfigReader.DEFAULT_CSS_CLASS, result.cssClass());
+        assertEquals("", result.cssClass());
         verifyAll();
     }
 
     @Test
-    public void read_honorsExplicitMenuSpacePartAndCssClass() {
+    public void test_read_honorsExplicitMenuSpacePartAndCssClass() {
         XWikiDocument doc = configDocument(" ");
         SpaceReference menuSpace = new SpaceReference("Slides", new WikiReference("xwiki"));
-        explicitMenuSpace = menuSpace;
-        NavigationConfig.Builder builder = new NavigationConfig.Builder().menuPart("stage")
-                .dataType(NavigationConfig.PAGE_MENU_DATA_TYPE).cmCssClass(" custom-one custom-two ");
-        NavigationConfig config = builder.build();
+        NavigationConfig config = new NavigationConfig.Builder().nodeSpaceRef(menuSpace).menuPart("stage")
+                .dataType(NavigationConfig.PAGE_MENU_DATA_TYPE).cmCssClass(" custom-one custom-two ").build();
         expectReadable(doc, config);
         replayAll();
         PresentationDefinition result = reader.read(configRef);
@@ -117,7 +98,7 @@ public class PresentationConfigReaderTest {
     }
 
     @Test
-    public void read_nonPageMenuIsUnavailable() {
+    public void test_read_nonPageMenuIsUnavailable() {
         XWikiDocument doc = configDocument("default");
         expectReadable(doc, new NavigationConfig.Builder().dataType("languageMenu").build());
         replayAll();
@@ -126,7 +107,7 @@ public class PresentationConfigReaderTest {
     }
 
     @Test
-    public void read_objectlessDocumentIsUnavailable() {
+    public void test_read_objectlessDocumentIsUnavailable() {
         XWikiDocument doc = configDocument();
         expect(modelUtils.serializeRefLocal(configRef)).andReturn("Config.WebHome");
         expect(modelAccess.exists(configRef)).andReturn(true);
@@ -145,7 +126,7 @@ public class PresentationConfigReaderTest {
             object.setDocumentReference(configRef);
             object.setXClassReference(classRef);
             object.setStringValue(INavigationClassConfig.PRESENTATION_TYPE_FIELD, presentationType);
-            configObjects.add(object);
+            doc.addXObject(object);
         }
         return doc;
     }
@@ -168,12 +149,14 @@ public class PresentationConfigReaderTest {
         }
     }
 
-    private void replayAll() {
+    private void replayAll(Object... additionalMocks) {
         replay(modelAccess, rightsAccess, modelUtils, navigationClassConfig, navigationFactory);
+        replay(additionalMocks);
     }
 
-    private void verifyAll() {
+    private void verifyAll(Object... additionalMocks) {
         verify(modelAccess, rightsAccess, modelUtils, navigationClassConfig, navigationFactory);
+        verify(additionalMocks);
     }
 
 }

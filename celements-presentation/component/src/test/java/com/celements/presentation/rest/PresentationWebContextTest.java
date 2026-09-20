@@ -61,7 +61,7 @@ public class PresentationWebContextTest extends AbstractComponentTest {
     }
 
     @Test
-    public void discoveredControllerAllowsAnonymousAccessToBothOperations() throws Exception {
+    public void test_discoveredControllerAllowsAnonymousAccessToBothOperations() throws Exception {
         expect(service.getPresentation(List.of("Content.WebHome"), 1)).andReturn(null);
         expect(service.renderSlides(List.of("Content.WebHome"), List.of("Content.First"), List.of("renderedContent"),
                 1)).andReturn(null);

@@ -8,6 +8,7 @@ package com.celements.presentation.rest;
 import static com.celements.execution.XWikiExecutionProp.XWIKI_CONTEXT;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.easymock.EasyMock.anyObject;
+import static org.easymock.EasyMock.createMock;
 import static org.easymock.EasyMock.eq;
 import static org.easymock.EasyMock.expect;
 import static org.junit.Assert.assertEquals;
@@ -47,7 +48,6 @@ import com.xpn.xwiki.XWikiContext;
 import com.xpn.xwiki.XWikiException;
 import com.xpn.xwiki.doc.XWikiDocument;
 import com.xpn.xwiki.objects.BaseObject;
-import com.xpn.xwiki.web.Utils;
 
 public class PresentationBatchRendererComponentTest extends AbstractComponentTest {
 
@@ -63,11 +63,11 @@ public class PresentationBatchRendererComponentTest extends AbstractComponentTes
     private VelocityContext originalVelocityContext;
 
     @Before
-    public void prepareComponentRendering() throws Exception {
-        componentManager = getComponentManager();
+    public void prepareTest() throws Exception {
+        componentManager = getBeanFactory().getBean(ComponentManager.class);
         modelUtils = createDefaultMock(ModelUtils.class);
         navigation = createDefaultMock(INavigation.class);
-        execution = componentManager.lookup(Execution.class);
+        execution = getBeanFactory().getBean(Execution.class);
         batchRenderer = new PresentationBatchRenderer(componentManager, modelUtils, execution);
         firstRef = new DocumentReference(DEFAULT_DB, "Content", "First");
         secondRef = new DocumentReference(DEFAULT_DB, "Content", "Second");
@@ -80,12 +80,12 @@ public class PresentationBatchRendererComponentTest extends AbstractComponentTes
     }
 
     @Test
-    public void renderedContent_registeredRendererPreservesRichFixtureAndIsolation() throws Exception {
+    public void test_renderedContent_registeredRendererPreservesRichFixtureAndIsolation() throws Exception {
         String firstHtml = fixture("rendered-content-first.html");
         String secondHtml = fixture("rendered-content-second.html");
-        RenderCommand renderCommand = createDefaultMock(RenderCommand.class);
-        PresentationContentRenderer renderer = componentManager.lookup(PresentationContentRenderer.class,
-                "renderedContent");
+        RenderCommand renderCommand = createMock(RenderCommand.class);
+        PresentationContentRenderer renderer = getBeanFactory().getBean("renderedContent",
+                PresentationContentRenderer.class);
         assertTrue(renderer instanceof RenderedContentPresentationType);
         ReflectionTestUtils.setField(renderer, "renderCmd", renderCommand);
         expectCommonResponseMetadata();
@@ -94,10 +94,10 @@ public class PresentationBatchRendererComponentTest extends AbstractComponentTes
                 .andAnswer(() -> renderFixtureAndMutate(invocation, firstHtml));
         expect(renderCommand.renderCelementsDocument(eq(secondRef), eq("view")))
                 .andAnswer(() -> renderFixtureAndMutate(invocation, secondHtml));
-        replayDefault();
+        replayDefault(renderCommand);
         List<RenderedSlideResponse> result = batchRenderer.render(definition, List.of(firstRef, secondRef), navigation,
                 PresentationRenderType.RENDERED_CONTENT);
-        verifyDefault();
+        verifyDefault(renderCommand);
         assertRenderedBatch(result, firstHtml, secondHtml);
         assertTrue(result.get(0).renderedContent().contains("href=\"/xwiki/bin/view/Content/Second\""));
         assertTrue(result.get(0).renderedContent().contains("/xwiki/bin/download/Content/First/guide.pdf"));
@@ -108,13 +108,13 @@ public class PresentationBatchRendererComponentTest extends AbstractComponentTes
     }
 
     @Test
-    public void renderedExtract_registeredRendererUsesFixturesInOrderAndIsolation() throws Exception {
+    public void test_renderedExtract_registeredRendererUsesFixturesInOrderAndIsolation() throws Exception {
         String firstHtml = fixture("rendered-extract-first.html");
         String secondHtml = fixture("rendered-extract-second.html");
-        RenderCommand renderCommand = createDefaultMock(RenderCommand.class);
-        IWebUtilsService webUtilsService = createDefaultMock(IWebUtilsService.class);
-        PresentationContentRenderer renderer = componentManager.lookup(PresentationContentRenderer.class,
-                "renderedExtract");
+        RenderCommand renderCommand = createMock(RenderCommand.class);
+        IWebUtilsService webUtilsService = createMock(IWebUtilsService.class);
+        PresentationContentRenderer renderer = getBeanFactory().getBean("renderedExtract",
+                PresentationContentRenderer.class);
         assertTrue(renderer instanceof RenderedExtractPresentationType);
         ReflectionTestUtils.setField(renderer, "renderCmd", renderCommand);
         ReflectionTestUtils.setField(renderer, "webUtilsService", webUtilsService);
@@ -122,20 +122,20 @@ public class PresentationBatchRendererComponentTest extends AbstractComponentTes
         XWikiDocument secondDoc = extractDocument(secondRef, secondHtml);
         expect(webUtilsService.getInheritedTemplatedPath(anyObject(DocumentReference.class)))
                 .andReturn(":celTemplates/RenderedExtract.vm").times(2);
-        expect(getMock(XWiki.class).getDocument(eq(firstRef), anyObject(XWikiContext.class)))
-                .andReturn(firstDoc).times(2);
-        expect(getMock(XWiki.class).getDocument(eq(secondRef), anyObject(XWikiContext.class)))
-                .andReturn(secondDoc).times(2);
+        expect(getMock(XWiki.class).getDocument(eq(firstRef), anyObject(XWikiContext.class))).andReturn(firstDoc)
+                .times(2);
+        expect(getMock(XWiki.class).getDocument(eq(secondRef), anyObject(XWikiContext.class))).andReturn(secondDoc)
+                .times(2);
         expectCommonResponseMetadata();
         AtomicInteger invocation = new AtomicInteger();
         expect(renderCommand.renderTemplatePath(eq(":celTemplates/RenderedExtract.vm"), eq(DEFAULT_LANG), eq("")))
                 .andAnswer(() -> renderCurrentExtractAndMutate(invocation));
         expect(renderCommand.renderTemplatePath(eq(":celTemplates/RenderedExtract.vm"), eq(DEFAULT_LANG), eq("")))
                 .andAnswer(() -> renderCurrentExtractAndMutate(invocation));
-        replayDefault();
+        replayDefault(renderCommand, webUtilsService);
         List<RenderedSlideResponse> result = batchRenderer.render(definition, List.of(firstRef, secondRef), navigation,
                 PresentationRenderType.RENDERED_EXTRACT);
-        verifyDefault();
+        verifyDefault(renderCommand, webUtilsService);
         assertRenderedBatch(result, firstHtml, secondHtml);
         assertTrue(result.get(0).renderedContent().contains("<strong>semantic emphasis</strong>"));
         assertTrue(result.get(0).renderedContent().contains("data-editorial-focus=\"center\""));
@@ -145,17 +145,17 @@ public class PresentationBatchRendererComponentTest extends AbstractComponentTes
     }
 
     @Test
-    public void registeredRendererFailureIsAtomicAndRestoresContexts() throws Exception {
+    public void test_registeredRendererFailureIsAtomicAndRestoresContexts() throws Exception {
         String firstHtml = fixture("rendered-content-first.html");
-        RenderCommand renderCommand = createDefaultMock(RenderCommand.class);
-        PresentationContentRenderer renderer = componentManager.lookup(PresentationContentRenderer.class,
-                "renderedContent");
+        RenderCommand renderCommand = createMock(RenderCommand.class);
+        PresentationContentRenderer renderer = getBeanFactory().getBean("renderedContent",
+                PresentationContentRenderer.class);
         ReflectionTestUtils.setField(renderer, "renderCmd", renderCommand);
         expectCommonResponseMetadata();
         expect(renderCommand.renderCelementsDocument(eq(firstRef), eq("view"))).andReturn(firstHtml);
         XWikiException failure = new XWikiException();
         expect(renderCommand.renderCelementsDocument(eq(secondRef), eq("view"))).andThrow(failure);
-        replayDefault();
+        replayDefault(renderCommand);
         try {
             batchRenderer.render(definition, List.of(firstRef, secondRef), navigation,
                     PresentationRenderType.RENDERED_CONTENT);
@@ -164,7 +164,7 @@ public class PresentationBatchRendererComponentTest extends AbstractComponentTes
             assertEquals("rendering_failed", exc.getCode());
             assertSame(failure, exc.getCause());
         }
-        verifyDefault();
+        verifyDefault(renderCommand);
         assertOriginalContextsRestored();
     }
 
@@ -176,8 +176,8 @@ public class PresentationBatchRendererComponentTest extends AbstractComponentTes
     }
 
     private XWikiDocument extractDocument(DocumentReference docRef, String content) throws Exception {
-        DocumentDetailsClasses classes = (DocumentDetailsClasses) Utils.getComponent(IClassCollectionRole.class,
-                "celements.documentDetails");
+        DocumentDetailsClasses classes = (DocumentDetailsClasses) getBeanFactory().getBean("celements.documentDetails",
+                IClassCollectionRole.class);
         XWikiDocument doc = new XWikiDocument(docRef);
         BaseObject extract = new BaseObject();
         extract.setXClassReference(classes.getDocumentExtractClassRef(DEFAULT_DB));

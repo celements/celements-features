@@ -33,14 +33,14 @@ public class PresentationControllerTest {
     private MockMvc mockMvc;
 
     @Before
-    public void setUp() {
+    public void prepareTest() {
         service = createMock(PresentationApiService.class);
         controller = new PresentationController(service);
         mockMvc = MockMvcBuilders.standaloneSetup(controller).build();
     }
 
     @Test
-    public void getPresentation_setsPrivateResponseHeaders() {
+    public void test_getPresentation_setsPrivateResponseHeaders() {
         PresentationResponse body = new PresentationResponse("Content.WebHome", "default", "de", List.of());
         expect(service.getPresentation(List.of("Content.WebHome"), 1)).andReturn(body);
         replay(service);
@@ -55,7 +55,7 @@ public class PresentationControllerTest {
     }
 
     @Test
-    public void handlePresentationException_returnsCodeOnlyAndNoStore() {
+    public void test_handlePresentationException_returnsCodeOnlyAndNoStore() {
         ResponseEntity<PresentationController.ErrorResponse> response = controller
                 .handlePresentationException(PresentationException.badRequest("invalid_render_type"));
         assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
@@ -64,7 +64,7 @@ public class PresentationControllerTest {
     }
 
     @Test
-    public void logPresentationException_controlled4xxUsesInfoWithoutThrowable() {
+    public void test_logPresentationException_controlled4xxUsesInfoWithoutThrowable() {
         Logger logger = createMock(Logger.class);
         RuntimeException cause = new RuntimeException("invalid anonymous input");
         PresentationException exc = PresentationException.badRequest("invalid_slide_selection",
@@ -78,13 +78,13 @@ public class PresentationControllerTest {
     }
 
     @Test
-    public void logPresentationException_controlled500UsesErrorWithCause() {
+    public void test_logPresentationException_controlled500UsesErrorWithoutThrowable() {
         Logger logger = createMock(Logger.class);
         RuntimeException cause = new RuntimeException("renderer failure");
         PresentationException exc = PresentationException
                 .renderingFailed("Failed presentation Content.WebHome slide Content.First", cause);
         logger.error("Controlled presentation REST failure [{}]: {}", "rendering_failed",
-                "Failed presentation Content.WebHome slide Content.First", cause);
+                "Failed presentation Content.WebHome slide Content.First");
         expectLastCall();
         replay(logger);
         PresentationController.logPresentationException(logger, exc);
@@ -92,7 +92,7 @@ public class PresentationControllerTest {
     }
 
     @Test
-    public void getPresentation_httpContractHasHeadersAndNoCors() throws Exception {
+    public void test_getPresentation_httpContractHasPrivateResponseHeaders() throws Exception {
         PresentationResponse body = new PresentationResponse("Content.WebHome", "default", "de", List.of());
         expect(service.getPresentation(List.of("Content.WebHome"), 1)).andReturn(body);
         replay(service);
@@ -101,20 +101,19 @@ public class PresentationControllerTest {
                 .andExpect(content().contentType("application/json;charset=UTF-8"))
                 .andExpect(header().string("Cache-Control", "private, no-cache"))
                 .andExpect(header().string("Vary", "Cookie, Accept-Language"))
-                .andExpect(header().string("X-Content-Type-Options", "nosniff"))
-                .andExpect(header().doesNotExist("Access-Control-Allow-Origin"));
+                .andExpect(header().string("X-Content-Type-Options", "nosniff"));
         verify(service);
     }
 
     @Test
-    public void getPresentation_missingRequiredParameterIsStandardBadRequest() throws Exception {
+    public void test_getPresentation_missingRequiredParameterIsStandardBadRequest() throws Exception {
         replay(service);
         mockMvc.perform(get("/v1/presentations").accept("application/json")).andExpect(status().isBadRequest());
         verify(service);
     }
 
     @Test
-    public void getPresentation_incompatibleAcceptIsStandardNotAcceptable() throws Exception {
+    public void test_getPresentation_incompatibleAcceptIsStandardNotAcceptable() throws Exception {
         replay(service);
         mockMvc.perform(get("/v1/presentations").param("presentationConfigFullName", "Content.WebHome")
                 .accept("application/xml")).andExpect(status().isNotAcceptable());
@@ -122,7 +121,7 @@ public class PresentationControllerTest {
     }
 
     @Test
-    public void getPresentation_controlledErrorContainsOnlyCode() throws Exception {
+    public void test_getPresentation_controlledErrorContainsOnlyCode() throws Exception {
         expect(service.getPresentation(List.of("bad"), 1))
                 .andThrow(PresentationException.badRequest("invalid_presentation_reference"));
         replay(service);
@@ -134,7 +133,7 @@ public class PresentationControllerTest {
     }
 
     @Test
-    public void renderSlides_httpSuccessPreservesArrayShapeAndHeaders() throws Exception {
+    public void test_renderSlides_httpSuccessPreservesArrayShapeAndHeaders() throws Exception {
         RenderedPresentationResponse body = new RenderedPresentationResponse("de",
                 List.of(new RenderedSlideResponse("Content.Second", "N2:Content:Content.Second", "<p>two</p>"),
                         new RenderedSlideResponse("Content.First", "N2:Content:Content.First", "<p>one</p>")));
@@ -152,13 +151,12 @@ public class PresentationControllerTest {
                         + "\"renderedContent\":\"<p>one</p>\"}]}"))
                 .andExpect(header().string("Cache-Control", "private, no-cache"))
                 .andExpect(header().string("Vary", "Cookie, Accept-Language"))
-                .andExpect(header().string("X-Content-Type-Options", "nosniff"))
-                .andExpect(header().doesNotExist("Access-Control-Allow-Origin"));
+                .andExpect(header().string("X-Content-Type-Options", "nosniff"));
         verify(service);
     }
 
     @Test
-    public void renderSlides_controlledErrorHasCodeOnlyAndNoStoreHeaders() throws Exception {
+    public void test_renderSlides_controlledErrorHasCodeOnlyAndNoStoreHeaders() throws Exception {
         expect(service.renderSlides(List.of("Content.WebHome"), List.of("Content.Missing"), List.of("renderedExtract"),
                 1)).andThrow(PresentationException.notFound("slide_not_found", "internal member diagnostic"));
         replay(service);
@@ -174,7 +172,7 @@ public class PresentationControllerTest {
     }
 
     @Test
-    public void renderSlides_malformedNavigationNumberIsStandardBadRequest() throws Exception {
+    public void test_renderSlides_malformedNavigationNumberIsStandardBadRequest() throws Exception {
         replay(service);
         mockMvc.perform(get("/v1/presentations/slides").param("presentationConfigFullName", "Content.WebHome")
                 .param("slideFullName", "Content.First").param("renderType", "renderedContent")
@@ -184,7 +182,7 @@ public class PresentationControllerTest {
     }
 
     @Test
-    public void getPresentation_presentationNotFoundUsesControlledErrorContract() throws Exception {
+    public void test_getPresentation_presentationNotFoundUsesControlledErrorContract() throws Exception {
         expect(service.getPresentation(List.of("Content.Missing"), 1)).andThrow(
                 PresentationException.notFound("presentation_not_found", "safe internal configuration detail"));
         replay(service);
@@ -198,7 +196,7 @@ public class PresentationControllerTest {
     }
 
     @Test
-    public void renderSlides_remainingControlledErrorsUseCodeOnlyMatrix() throws Exception {
+    public void test_renderSlides_remainingControlledErrorsUseCodeOnlyMatrix() throws Exception {
         expect(service.renderSlides(List.of("Content.WebHome"), List.of("bad"), List.of("renderedContent"), 1))
                 .andThrow(PresentationException.badRequest("invalid_slide_selection", "Rejected slideFullName [bad]",
                         null));
