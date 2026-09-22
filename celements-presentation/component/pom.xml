@@ -7,7 +7,7 @@
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>celements-presentation</artifactId>
-  <version>7.3-RC1</version>
+  <version>7.3-SNAPSHOT</version>
   <description>Celements Presentation REST API</description>
   <dependencies>
     <dependency><groupId>com.celements</groupId><artifactId>celements-commons</artifactId><scope>provided</scope></dependency>
@@ -43,6 +43,6 @@
     <connection>scm:git:git@github.com:celements/celements-features.git</connection>
     <developerConnection>scm:git:git@github.com:celements/celements-features.git</developerConnection>
     <url>https://github.com/celements/celements-features</url>
-    <tag>celements-presentation-7.3-RC1</tag>
+    <tag>HEAD</tag>
   </scm>
 </project>
