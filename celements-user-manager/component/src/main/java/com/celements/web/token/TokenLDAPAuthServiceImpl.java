@@ -21,21 +21,27 @@ package com.celements.web.token;
 
 import static com.celements.common.lambda.LambdaExceptionUtil.*;
 import static com.celements.logging.LogUtils.*;
+import static com.celements.spring.context.SpringContextProvider.*;
 import static com.google.common.base.Strings.*;
 import static com.google.common.collect.ImmutableList.*;
 import static com.xpn.xwiki.user.api.XWikiRightService.*;
 import static java.util.Arrays.*;
 
+import java.security.Principal;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Supplier;
 
+import org.securityfilter.realm.SimplePrincipal;
 import org.xwiki.model.reference.DocumentReference;
 
+import com.celements.auth.MainAdminConfig;
 import com.celements.auth.user.User;
 import com.celements.auth.user.UserInstantiationException;
 import com.celements.auth.user.UserService;
 import com.celements.model.util.ModelUtils;
+import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableList;
 import com.xpn.xwiki.XWikiContext;
 import com.xpn.xwiki.XWikiException;
@@ -47,6 +53,9 @@ import com.xpn.xwiki.web.Utils;
 
 public class TokenLDAPAuthServiceImpl extends XWikiLDAPAuthServiceImpl {
 
+  private final Supplier<MainAdminConfig> mainAdminCfg = Suppliers.memoize(
+      () -> getSpringContext().getBean(MainAdminConfig.class));
+
   @Override
   public XWikiUser checkAuth(XWikiContext context) throws XWikiException {
     if ((context.getResponse() != null) && !"".equals(context.getWiki().Param("celements.auth.P3P",
@@ -54,10 +63,32 @@ public class TokenLDAPAuthServiceImpl extends XWikiLDAPAuthServiceImpl {
       context.getResponse().addHeader("P3P", "CP=\"" + context.getWiki().Param("celements.auth.P3P")
           + "\"");
     }
-    return Optional.ofNullable(checkAuthByToken(context)
-        .orElseGet(rethrowSupplier(() -> super.checkAuth(context))))
+    return autoLogin()
+        .or(rethrowSupplier(() -> checkAuthByToken(context)))
+        .or(rethrowSupplier(() -> Optional.ofNullable(super.checkAuth(context))))
         .filter(this::isNotSuspended)
         .orElse(null);
+  }
+
+  @Override
+  public XWikiUser checkAuth(String username, String password, String rememberme,
+      XWikiContext context) throws XWikiException {
+    return autoLogin().orElseGet(rethrowSupplier(() -> super
+        .checkAuth(username, password, rememberme, context)));
+  }
+
+  @Override
+  public Principal authenticate(String username, String password, XWikiContext context)
+      throws XWikiException {
+    return autoLogin()
+        .<Principal>map(x -> new SimplePrincipal(x.getUser()))
+        .orElseGet(rethrowSupplier(() -> super.authenticate(username, password, context)));
+  }
+
+  private Optional<XWikiUser> autoLogin() {
+    return mainAdminCfg.get().isAutoLoginEnabled()
+        ? Optional.of(mainAdminCfg.get().getXWikiUser())
+        : Optional.empty();
   }
 
   private boolean isNotSuspended(XWikiUser xUser) {
