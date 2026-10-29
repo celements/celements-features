@@ -1,14 +1,18 @@
 package com.celements.mandatory;
 
 import static com.celements.common.test.CelementsTestUtils.*;
+import static com.xpn.xwiki.XWikiConstant.*;
 import static org.easymock.EasyMock.*;
 import static org.junit.Assert.*;
+
+import java.util.Optional;
 
 import org.junit.Before;
 import org.junit.Test;
 import org.xwiki.model.reference.ClassReference;
 import org.xwiki.model.reference.DocumentReference;
 
+import com.celements.auth.MainAdminConfig;
 import com.celements.auth.user.User;
 import com.celements.auth.user.UserInstantiationException;
 import com.celements.auth.user.UserService;
@@ -19,7 +23,6 @@ import com.celements.model.classes.fields.ClassField;
 import com.celements.model.object.xwiki.XWikiObjectFetcher;
 import com.celements.model.reference.RefBuilder;
 import com.celements.web.classes.oldcore.XWikiUsersClass;
-import com.xpn.xwiki.XWikiConstant;
 import com.xpn.xwiki.XWikiException;
 import com.xpn.xwiki.doc.XWikiDocument;
 import com.xpn.xwiki.objects.BaseObject;
@@ -37,6 +40,10 @@ public class MainAdminUserTest extends AbstractComponentTest {
   public void prepareTest() throws Exception {
     registerComponentMock(IModelAccessFacade.class);
     registerComponentMock(UserService.class);
+    registerComponentMock(MainAdminConfig.class);
+    expect(getMock(MainAdminConfig.class).isAutoLoginEnabled()).andStubReturn(false);
+    expect(getMock(MainAdminConfig.class).getPassword()).andStubReturn(Optional.empty());
+    expect(getMock(MainAdminConfig.class).getUserDocRef()).andStubReturn(getAdminUserRef());
     mandatory = getBeanFactory().getBean("celements.mandatory.MainAdminUser",
         MainAdminUser.class);
   }
@@ -62,7 +69,8 @@ public class MainAdminUserTest extends AbstractComponentTest {
   @Test
   public void testIsEnabled_configured() throws Exception {
     getXContext().setDatabase("xwiki");
-    setAdminPassword(ADMIN_PASSWORD);
+    expect(getMock(MainAdminConfig.class).getPassword())
+        .andReturn(Optional.of(ADMIN_PASSWORD));
 
     replayDefault();
     assertTrue(mandatory.isEnabled());
@@ -70,12 +78,12 @@ public class MainAdminUserTest extends AbstractComponentTest {
   }
 
   @Test
-  public void testIsEnabled_configured_blank() throws Exception {
+  public void testIsEnabled_autoLogin() throws Exception {
     getXContext().setDatabase("xwiki");
-    setAdminPassword(" ");
+    expect(getMock(MainAdminConfig.class).isAutoLoginEnabled()).andReturn(true);
 
     replayDefault();
-    assertFalse(mandatory.isEnabled());
+    assertTrue(mandatory.isEnabled());
     verifyDefault();
   }
 
@@ -110,7 +118,8 @@ public class MainAdminUserTest extends AbstractComponentTest {
   @Test
   public void testCheckDocumentsMain_activatesAdminAndAddsToGroup() throws Exception {
     getXContext().setDatabase("xwiki");
-    setAdminPassword(ADMIN_PASSWORD);
+    expect(getMock(MainAdminConfig.class).getPassword())
+        .andReturn(Optional.of(ADMIN_PASSWORD)).times(2);
     DocumentReference adminUserRef = getAdminUserRef();
     XWikiDocument adminUserDoc = newAdminUserDoc(false);
     User adminUser = createDefaultMock(User.class);
@@ -158,18 +167,43 @@ public class MainAdminUserTest extends AbstractComponentTest {
     verifyDefault();
   }
 
-  private ClassReference getAdminGroupRef() {
-    return new ClassReference(XWikiConstant.XWIKI_SPACE, "XWikiAdminGroup");
+  @Test
+  public void testCheckDocumentsMain_autoLogin_activatesWithRandomPassword() throws Exception {
+    getXContext().setDatabase("xwiki");
+    expect(getMock(MainAdminConfig.class).isAutoLoginEnabled()).andReturn(true);
+    DocumentReference adminUserRef = getAdminUserRef();
+    XWikiDocument adminUserDoc = newAdminUserDoc(false);
+    adminUserDoc.getXObject(XWikiUsersClass.CLASS_REF.getDocRef(
+        adminUserRef.getWikiReference())).setStringValue(
+            XWikiUsersClass.FIELD_PASSWORD.getName(), "stored-hash");
+    User adminUser = createDefaultMock(User.class);
+    expect(getMock(UserService.class).getUser(adminUserRef)).andReturn(adminUser);
+    expect(adminUser.getDocument()).andReturn(adminUserDoc);
+    getMock(IModelAccessFacade.class).saveDocument(adminUserDoc, "activate account");
+    expectXWikiUsersClass();
+    expect(getMock(UserService.class).addUserToGroup(adminUser, getAdminGroupRef()))
+        .andReturn(true);
+
+    replayDefault();
+    assertFalse(mandatory.checkDocumentsMain(new XWikiDocument(adminUserRef)));
+    verifyDefault();
+
+    assertEquals(1, getAdminUserObj(adminUserDoc).getIntValue(
+        XWikiUsersClass.FIELD_ACTIVE.getName()));
+    String passwordHash = getAdminUserObj(adminUserDoc).getStringValue(
+        XWikiUsersClass.FIELD_PASSWORD.getName());
+    assertFalse(passwordHash.isEmpty());
+    assertNotEquals("stored-hash", passwordHash);
   }
 
-  private void setAdminPassword(String password) {
-    getConfigurationSource().setProperty(MainAdminUser.CFG_KEY_ADMIN_PASSWORD, password);
+  private ClassReference getAdminGroupRef() {
+    return new ClassReference(XWIKI_SPACE, "XWikiAdminGroup");
   }
 
   private DocumentReference getAdminUserRef() {
     return new RefBuilder().wiki("xwiki")
-        .space(XWikiConstant.XWIKI_SPACE)
-        .doc(MainAdminUser.ADMIN_DOC_NAME)
+        .space(XWIKI_SPACE)
+        .doc("Admin")
         .build(DocumentReference.class);
   }
 

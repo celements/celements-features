@@ -24,6 +24,7 @@ import static com.celements.web.token.TokenLDAPAuthServiceImpl.*;
 import static org.easymock.EasyMock.*;
 import static org.junit.Assert.*;
 
+import java.security.Principal;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -34,6 +35,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.xwiki.model.reference.DocumentReference;
 
+import com.celements.auth.MainAdminConfig;
 import com.celements.common.test.AbstractComponentTest;
 import com.celements.model.access.IModelAccessFacade;
 import com.celements.model.classes.ClassDefinition;
@@ -48,12 +50,19 @@ import com.xpn.xwiki.web.XWikiRequest;
 
 public class TokenLDAPAuthServiceImplTest extends AbstractComponentTest {
 
+  private static final String ADMIN_USER_FULL_NAME = "xwiki:XWiki.Admin";
+
   private TokenLDAPAuthServiceImpl tokenAuthImpl;
   private XWikiStoreInterface store;
+  private MainAdminConfig mainAdminConfig;
 
   @Before
   public void prepare() throws Exception {
-    registerComponentMocks(IModelAccessFacade.class);
+    registerComponentMocks(IModelAccessFacade.class, MainAdminConfig.class);
+    mainAdminConfig = getMock(MainAdminConfig.class);
+    expect(mainAdminConfig.isAutoLoginEnabled()).andStubReturn(false);
+    expect(mainAdminConfig.getXWikiUser())
+        .andStubReturn(new XWikiUser(ADMIN_USER_FULL_NAME, true));
     tokenAuthImpl = new TokenLDAPAuthServiceImpl();
     store = getStoreMock();
     expect(getMock(XWiki.class).isVirtualMode()).andReturn(true).anyTimes();
@@ -166,6 +175,55 @@ public class TokenLDAPAuthServiceImplTest extends AbstractComponentTest {
     replayDefault();
     assertNull(tokenAuthImpl.checkAuth(getXContext()));
     verifyDefault();
+  }
+
+  @Test
+  public void test_checkAuthXWikiContext_autoLoginAdmin() throws Exception {
+    expect(mainAdminConfig.isAutoLoginEnabled()).andReturn(true);
+    expectUserDocument(ADMIN_USER_FULL_NAME);
+
+    replayDefault();
+    XWikiUser user = tokenAuthImpl.checkAuth(getXContext());
+    verifyDefault();
+
+    assertEquals(ADMIN_USER_FULL_NAME, user.getUser());
+    assertTrue(user.isMain());
+  }
+
+  @Test
+  public void test_checkAuthWithCredentials_autoLoginAdmin_withoutCredentials() throws Exception {
+    expect(mainAdminConfig.isAutoLoginEnabled()).andReturn(true);
+
+    replayDefault();
+    XWikiUser user = tokenAuthImpl.checkAuth(null, null, null, getXContext());
+    verifyDefault();
+
+    assertEquals(ADMIN_USER_FULL_NAME, user.getUser());
+    assertTrue(user.isMain());
+  }
+
+  @Test
+  public void test_authenticate_autoLoginAdmin_withoutCredentials() throws Exception {
+    expect(mainAdminConfig.isAutoLoginEnabled()).andReturn(true);
+
+    replayDefault();
+    Principal principal = tokenAuthImpl.authenticate(null, null, getXContext());
+    verifyDefault();
+
+    assertEquals(ADMIN_USER_FULL_NAME, principal.getName());
+  }
+
+  private void expectUserDocument(String fullName) throws Exception {
+    DocumentReference userDocRef = getModelUtils().resolveRef(fullName, DocumentReference.class);
+    BaseObject userObj = new BaseObject();
+    userObj.setDocumentReference(userDocRef);
+    userObj.setXClassReference(getBeanFactory()
+        .getBean(XWikiUsersClass.CLASS_DEF_HINT, ClassDefinition.class).getClassReference());
+    userObj.setIntValue(XWikiUsersClass.FIELD_SUSPENDED.getName(), 0);
+    XWikiDocument userDoc = new XWikiDocument(userDocRef);
+    userDoc.setNew(false);
+    userDoc.addXObject(userObj);
+    expect(getMock(IModelAccessFacade.class).getDocument(eq(userDocRef))).andReturn(userDoc);
   }
 
   @Test
