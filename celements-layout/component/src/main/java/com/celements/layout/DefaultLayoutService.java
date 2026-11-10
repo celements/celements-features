@@ -9,6 +9,7 @@ import static com.google.common.collect.ImmutableMap.*;
 import java.io.IOException;
 import java.util.Deque;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -55,6 +56,7 @@ import com.celements.model.util.ModelUtils;
 import com.celements.navigation.TreeNode;
 import com.celements.navigation.service.ITreeNodeService;
 import com.celements.pagelayout.LayoutServiceRole;
+import com.celements.pagetype.classes.PageTypeClass;
 import com.celements.web.CelConstant;
 import com.celements.web.service.IWebUtilsService;
 import com.google.common.base.Predicates;
@@ -339,22 +341,51 @@ public final class DefaultLayoutService implements LayoutServiceRole {
     if (documentReference == null) {
       return null;
     }
-    SpaceReference layoutSpaceRef = null;
+    Optional<SpaceReference> validLayout;
     if (existsLayout(documentReference.getLastSpaceReference())) {
-      layoutSpaceRef = getCelLayoutEditorSpaceRef();
+      validLayout = resolveValidLayoutSpace(getCelLayoutEditorSpaceRef());
     } else {
-      String spaceName = inheritorFactory.getPageLayoutInheritor(modelUtils.serializeRefLocal(
-          documentReference), modelContext.getXWikiContext()).getStringValue("page_layout", null);
-      if (spaceName != null) {
-        layoutSpaceRef = modelUtils.resolveRef(spaceName, SpaceReference.class);
+      validLayout = getLoginLayout(documentReference, inheritorFactory);
+      if (validLayout.isEmpty()) {
+        String spaceName = inheritorFactory.getPageLayoutInheritor(modelUtils.serializeRefLocal(
+            documentReference), modelContext.getXWikiContext()).getStringValue("page_layout", null);
+        SpaceReference inheritedLayout = spaceName != null
+            ? modelUtils.resolveRef(spaceName, SpaceReference.class) : null;
+        validLayout = resolveValidLayoutSpace(inheritedLayout);
       }
     }
-    layoutSpaceRef = resolveValidLayoutSpace(layoutSpaceRef)
-        .orElseGet(this::getDefaultLayoutSpaceReference);
+    SpaceReference layoutSpaceRef = validLayout.orElseGet(this::getDefaultLayoutSpaceReference);
     LOGGER.info(
         "getPageLayoutForDoc: for [{}] returning [{}].  Time used in millisec: {}",
         documentReference, layoutSpaceRef, (System.currentTimeMillis() - millisec));
     return layoutSpaceRef;
+  }
+
+  private Optional<SpaceReference> getLoginLayout(DocumentReference docRef,
+      InheritorFactory inheritorFactory) {
+    XWikiContext context = modelContext.getXWikiContext();
+    String action = context.getAction();
+    if (!"login".equals(action) && !"loginsubmit".equals(action)) {
+      return Optional.empty();
+    }
+    // Login defaults must precede the mandatory XWiki-space SimpleLayout, but not page overrides.
+    String pageLayout = inheritorFactory.getFieldInheritor(PageTypeClass.CLASS_REF, List.of(docRef))
+        .getStringValue(PageTypeClass.PAGE_LAYOUT.getName(), null);
+    if ((pageLayout != null) && !pageLayout.trim().isEmpty()) {
+      SpaceReference pageLayoutRef = modelUtils.resolveRef(pageLayout, SpaceReference.class);
+      Optional<SpaceReference> validPageLayout = resolveValidLayoutSpace(pageLayoutRef);
+      if (validPageLayout.isPresent()) {
+        return validPageLayout;
+      }
+    }
+    String configuredLayout = context.getWiki()
+        .Param(XWIKICFG_CELEMENTS_LAYOUT_DEFAULT + "." + action, "");
+    if ((configuredLayout == null) || configuredLayout.trim().isEmpty()) {
+      return Optional.empty();
+    }
+    SpaceReference configuredLayoutRef = RefBuilder.from(modelContext.getWikiRef())
+        .space(configuredLayout).build(SpaceReference.class);
+    return resolveValidLayoutSpace(configuredLayoutRef);
   }
 
   @Override
