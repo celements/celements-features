@@ -8,7 +8,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -25,7 +24,6 @@ import org.apache.lucene.util.Version;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.springframework.test.util.ReflectionTestUtils;
 import org.xwiki.model.reference.DocumentReference;
 import org.xwiki.model.reference.EntityReference;
 
@@ -72,8 +70,9 @@ public class IndexRebuilderTest extends AbstractComponentTest {
   @After
   public void cleanup() throws Exception {
     if (rebuilder != null) {
-      ((ExecutorService) ReflectionTestUtils.getField(rebuilder, "rebuildExecutor"))
-          .shutdownNow();
+      rebuilder.rebuildExecutor.shutdownNow();
+      assertTrue("Rebuild executor did not terminate",
+          rebuilder.rebuildExecutor.awaitTermination(10, TimeUnit.SECONDS));
     }
     if (writer != null) {
       writer.close();
@@ -128,7 +127,10 @@ public class IndexRebuilderTest extends AbstractComponentTest {
     runRebuild(scope, 1);
 
     assertEquals(Set.of(docId(deleted)), deletedIds());
-    assertEquals(1, queued.stream().filter(data -> !data.isDeleted()).count());
+    List<AbstractIndexData> updates = queued.stream().filter(data -> !data.isDeleted()).toList();
+    assertEquals(1, updates.size());
+    assertTrue(updates.get(0) instanceof DocumentData);
+    assertEquals(docId(existing), updates.get(0).getId());
     assertEquals(Set.of(docId(existing), docId(outside)), remainingIds());
   }
 

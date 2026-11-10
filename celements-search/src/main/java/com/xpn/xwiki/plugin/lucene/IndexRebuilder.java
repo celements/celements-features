@@ -33,7 +33,7 @@ import java.util.Optional;
 import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
@@ -153,7 +153,7 @@ public class IndexRebuilder implements LuceneIndexRebuildService {
    */
   private final AtomicReference<IndexUpdater> indexUpdater = new AtomicReference<>();
 
-  private final Executor rebuildExecutor = Executors.newSingleThreadExecutor();
+  final ExecutorService rebuildExecutor = Executors.newSingleThreadExecutor();
   private final Queue<IndexRebuildFuture> rebuildQueue = new LinkedList<>();
   private final AtomicReference<Instant> paused = new AtomicReference<>(Instant.MIN);
 
