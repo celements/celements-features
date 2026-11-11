@@ -43,6 +43,7 @@ import com.celements.cells.div.CellRenderStrategy;
 import com.celements.cells.json.JsonRenderStrategy;
 import com.celements.common.MoreOptional;
 import com.celements.inheritor.InheritorFactory;
+import com.celements.init.XWikiProvider;
 import com.celements.model.access.IModelAccessFacade;
 import com.celements.model.access.exception.DocumentDeleteException;
 import com.celements.model.access.exception.DocumentNotExistsException;
@@ -94,6 +95,7 @@ public final class DefaultLayoutService implements LayoutServiceRole {
   private static final String PACKAGEPLUGIN_NAME = "package";
 
   private final ModelContext modelContext;
+  private final XWikiProvider wikiProvider;
   private final ModelUtils modelUtils;
   private final IModelAccessFacade modelAccess;
   private final QueryManager queryManager;
@@ -103,6 +105,7 @@ public final class DefaultLayoutService implements LayoutServiceRole {
 
   @Inject
   public DefaultLayoutService(ModelContext modelContext,
+      XWikiProvider wikiProvider,
       ModelUtils modelUtils,
       IModelAccessFacade modelAccess,
       QueryManager queryManager,
@@ -111,6 +114,7 @@ public final class DefaultLayoutService implements LayoutServiceRole {
       VelocityManager velocityManager,
       ITreeNodeService treeNodeService) {
     this.modelContext = modelContext;
+    this.wikiProvider = wikiProvider;
     this.modelUtils = modelUtils;
     this.modelAccess = modelAccess;
     this.queryManager = queryManager;
@@ -363,29 +367,32 @@ public final class DefaultLayoutService implements LayoutServiceRole {
 
   private Optional<SpaceReference> getLoginLayout(DocumentReference docRef,
       InheritorFactory inheritorFactory) {
-    XWikiContext context = modelContext.getXWikiContext();
-    String action = context.getAction();
+    String action = modelContext.getXWikiContext().getAction();
     if (!"login".equals(action) && !"loginsubmit".equals(action)) {
       return Optional.empty();
     }
     // Login defaults must precede the mandatory XWiki-space SimpleLayout, but not page overrides.
+    return getExplicitPageLayout(docRef, inheritorFactory)
+        .or(() -> getConfiguredActionLayout(action));
+  }
+
+  private Optional<SpaceReference> getExplicitPageLayout(DocumentReference docRef,
+      InheritorFactory inheritorFactory) {
     String pageLayout = inheritorFactory.getFieldInheritor(PageTypeClass.CLASS_REF, List.of(docRef))
         .getStringValue(PageTypeClass.PAGE_LAYOUT.getName(), null);
-    if ((pageLayout != null) && !pageLayout.trim().isEmpty()) {
-      SpaceReference pageLayoutRef = modelUtils.resolveRef(pageLayout, SpaceReference.class);
-      Optional<SpaceReference> validPageLayout = resolveValidLayoutSpace(pageLayoutRef);
-      if (validPageLayout.isPresent()) {
-        return validPageLayout;
-      }
-    }
-    String configuredLayout = context.getWiki()
+    return resolveValidLayoutSpace(pageLayout);
+  }
+
+  private Optional<SpaceReference> getConfiguredActionLayout(String action) {
+    String configuredLayout = wikiProvider.get().orElseThrow()
         .Param(XWIKICFG_CELEMENTS_LAYOUT_DEFAULT + "." + action, "");
-    if ((configuredLayout == null) || configuredLayout.trim().isEmpty()) {
-      return Optional.empty();
-    }
-    SpaceReference configuredLayoutRef = RefBuilder.from(modelContext.getWikiRef())
-        .space(configuredLayout).build(SpaceReference.class);
-    return resolveValidLayoutSpace(configuredLayoutRef);
+    return resolveValidLayoutSpace(configuredLayout);
+  }
+
+  private Optional<SpaceReference> resolveValidLayoutSpace(@Nullable String layoutName) {
+    return MoreOptional.asNonBlank(layoutName)
+        .map(layout -> modelUtils.resolveRef(layout, SpaceReference.class))
+        .flatMap(this::resolveValidLayoutSpace);
   }
 
   @Override
