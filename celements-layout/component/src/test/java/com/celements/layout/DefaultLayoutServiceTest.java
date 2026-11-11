@@ -50,6 +50,7 @@ import com.celements.model.access.exception.DocumentNotExistsException;
 import com.celements.model.reference.RefBuilder;
 import com.celements.pagelayout.LayoutServiceRole;
 import com.celements.pagetype.IPageTypeClassConfig;
+import com.celements.pagetype.classes.PageTypeClass;
 import com.celements.web.CelConstant;
 import com.google.common.collect.ImmutableList;
 import com.xpn.xwiki.XWiki;
@@ -78,7 +79,7 @@ public class DefaultLayoutServiceTest extends AbstractComponentTest {
     // expect(xwiki.getStore()).andReturn(storeMock).anyTimes();
     queryManagerMock = registerComponentMock(QueryManager.class);
     modelAccessMock = registerComponentMock(IModelAccessFacade.class);
-    layoutService = (DefaultLayoutService) Utils.getComponent(LayoutServiceRole.class);
+    layoutService = getBeanFactory().getBean(DefaultLayoutService.class);
   }
 
   @Test
@@ -229,6 +230,167 @@ public class DefaultLayoutServiceTest extends AbstractComponentTest {
     replayDefault();
     assertNull(layoutService.getPageLayoutForDoc(null));
     verifyDefault();
+  }
+
+  @Test
+  public void test_getPageLayoutForDoc_login_configuredBeforeInheritance() throws Exception {
+    DocumentReference docRef = prepareLoginLayout("login", null);
+    expect(xwiki.Param("celements.layout.default.login", "")).andReturn("Login2016Layout");
+    SpaceReference loginLayout = new SpaceReference("Login2016Layout", getWikiRef());
+    XWikiDocument layoutDoc = new XWikiDocument(new DocumentReference("WebHome", loginLayout));
+    BaseObject layoutProperties = new BaseObject();
+    layoutProperties.setXClassReference(PageLayoutPropertiesClass.CLASS_REF.getDocRef(getWikiRef()));
+    layoutDoc.addXObject(layoutProperties);
+    expect(modelAccessMock.getDocument(layoutDoc.getDocumentReference())).andReturn(layoutDoc).once();
+    replayDefault();
+    assertEquals(loginLayout, layoutService.getPageLayoutForDoc(docRef));
+    verifyDefault();
+  }
+
+  @Test
+  public void test_getPageLayoutForDoc_loginsubmit_centralConfiguredLayout() throws Exception {
+    DocumentReference docRef = prepareLoginLayout("loginsubmit", null);
+    expect(xwiki.Param("celements.layout.default.loginsubmit", "")).andReturn("Login2016Layout");
+    expectLayoutDoc(new SpaceReference("Login2016Layout", getWikiRef()), false);
+    SpaceReference loginLayout = new SpaceReference("Login2016Layout", CelConstant.CENTRAL_WIKI);
+    expectLayoutDoc(loginLayout, true);
+    replayDefault();
+    assertEquals(loginLayout, layoutService.getPageLayoutForDoc(docRef));
+    verifyDefault();
+  }
+
+  @Test
+  public void test_getPageLayoutForDoc_login_explicitPageLayout() throws Exception {
+    DocumentReference docRef = prepareLoginLayout("login", "PageLayout");
+    SpaceReference pageLayout = new SpaceReference("PageLayout", getWikiRef());
+    expectLayoutDoc(pageLayout, true);
+    replayDefault();
+    assertEquals(pageLayout, layoutService.getPageLayoutForDoc(docRef));
+    verifyDefault();
+  }
+
+  @Test
+  public void test_getPageLayoutForDoc_loginsubmit_explicitCentralPageLayout() throws Exception {
+    DocumentReference docRef = prepareLoginLayout("loginsubmit", "PageLayout");
+    expectLayoutDoc(new SpaceReference("PageLayout", getWikiRef()), false);
+    SpaceReference pageLayout = new SpaceReference("PageLayout", CelConstant.CENTRAL_WIKI);
+    expectLayoutDoc(pageLayout, true);
+    replayDefault();
+    assertEquals(pageLayout, layoutService.getPageLayoutForDoc(docRef));
+    verifyDefault();
+  }
+
+  @Test
+  public void test_getPageLayoutForDoc_login_invalidPageLayout() throws Exception {
+    DocumentReference docRef = prepareLoginLayout("login", "MissingLayout");
+    expect(xwiki.Param("celements.layout.default.login", "")).andReturn("Login2016Layout");
+    expectLayoutDoc(new SpaceReference("MissingLayout", getWikiRef()), false);
+    expectLayoutDoc(new SpaceReference("MissingLayout", CelConstant.CENTRAL_WIKI), false);
+    SpaceReference loginLayout = new SpaceReference("Login2016Layout", getWikiRef());
+    expectLayoutDoc(loginLayout, true);
+    replayDefault();
+    assertEquals(loginLayout, layoutService.getPageLayoutForDoc(docRef));
+    verifyDefault();
+  }
+
+  @Test
+  public void test_getPageLayoutForDoc_login_missingConfiguration() throws Exception {
+    DocumentReference docRef = prepareLoginLayout("login", null);
+    expect(xwiki.Param("celements.layout.default.login", "")).andReturn("");
+    expectPageLayout(new DocumentReference(context.getDatabase(), "XWiki", "WebPreferences"),
+        "SimpleLayout");
+    SpaceReference inheritedLayout = new SpaceReference("SimpleLayout", getWikiRef());
+    expectLayoutDoc(inheritedLayout, true);
+    replayDefault();
+    assertEquals(inheritedLayout, layoutService.getPageLayoutForDoc(docRef));
+    verifyDefault();
+  }
+
+  @Test
+  public void test_getPageLayoutForDoc_loginsubmit_emptyConfiguration() throws Exception {
+    DocumentReference docRef = prepareLoginLayout("loginsubmit", null);
+    expect(xwiki.Param("celements.layout.default.loginsubmit", "")).andReturn("");
+    expectPageLayout(new DocumentReference(context.getDatabase(), "XWiki", "WebPreferences"),
+        "SimpleLayout");
+    SpaceReference inheritedLayout = new SpaceReference("SimpleLayout", getWikiRef());
+    expectLayoutDoc(inheritedLayout, true);
+    replayDefault();
+    assertEquals(inheritedLayout, layoutService.getPageLayoutForDoc(docRef));
+    verifyDefault();
+  }
+
+  @Test
+  public void test_getPageLayoutForDoc_login_invalidConfiguration() throws Exception {
+    DocumentReference docRef = prepareLoginLayout("login", null);
+    expect(xwiki.Param("celements.layout.default.login", "")).andReturn("MissingLayout");
+    expectPageLayout(new DocumentReference(context.getDatabase(), "XWiki", "WebPreferences"),
+        "SimpleLayout");
+    expectLayoutDoc(new SpaceReference("MissingLayout", getWikiRef()), false);
+    expectLayoutDoc(new SpaceReference("MissingLayout", CelConstant.CENTRAL_WIKI), false);
+    SpaceReference inheritedLayout = new SpaceReference("SimpleLayout", getWikiRef());
+    expectLayoutDoc(inheritedLayout, true);
+    replayDefault();
+    assertEquals(inheritedLayout, layoutService.getPageLayoutForDoc(docRef));
+    verifyDefault();
+  }
+
+  @Test
+  public void test_getPageLayoutForDoc_login_missingConfiguration_generalFallback() throws Exception {
+    DocumentReference docRef = prepareLoginLayout("login", null);
+    expect(xwiki.Param("celements.layout.default.login", "")).andReturn("");
+    expectPageLayout(new DocumentReference(context.getDatabase(), "XWiki", "WebPreferences"), null);
+    expectPageLayout(new DocumentReference(context.getDatabase(), "XWiki", "XWikiPreferences"), null);
+    expect(xwiki.Param("celements.layout.default", "SimpleLayout")).andReturn("GeneralLayout");
+    expect(xwiki.Param("celements.layout.default.login", "GeneralLayout"))
+        .andReturn("GeneralLayout");
+    SpaceReference generalLayout = new SpaceReference("GeneralLayout", getWikiRef());
+    expectLayoutDoc(generalLayout, true);
+    replayDefault();
+    assertEquals(generalLayout, layoutService.getPageLayoutForDoc(docRef));
+    verifyDefault();
+  }
+
+  @Test
+  public void test_getPageLayoutForDoc_view_inheritanceBeforeConfiguration() throws Exception {
+    DocumentReference docRef = prepareLoginLayout("view", null);
+    expectPageLayout(new DocumentReference(context.getDatabase(), "XWiki", "WebPreferences"),
+        "SimpleLayout");
+    SpaceReference inheritedLayout = new SpaceReference("SimpleLayout", getWikiRef());
+    expectLayoutDoc(inheritedLayout, true);
+    replayDefault();
+    assertEquals(inheritedLayout, layoutService.getPageLayoutForDoc(docRef));
+    verifyDefault();
+  }
+
+  @Test
+  public void test_getPageLayoutForDoc_edit_inheritanceBeforeConfiguration() throws Exception {
+    DocumentReference docRef = prepareLoginLayout("edit", null);
+    expectPageLayout(new DocumentReference(context.getDatabase(), "XWiki", "WebPreferences"),
+        "SimpleLayout");
+    SpaceReference inheritedLayout = new SpaceReference("SimpleLayout", getWikiRef());
+    expectLayoutDoc(inheritedLayout, true);
+    replayDefault();
+    assertEquals(inheritedLayout, layoutService.getPageLayoutForDoc(docRef));
+    verifyDefault();
+  }
+
+  private DocumentReference prepareLoginLayout(String action, String pageLayout) throws Exception {
+    context.setAction(action);
+    DocumentReference docRef = new DocumentReference(context.getDatabase(), "XWiki", "XWikiLogin");
+    expectPageLayout(docRef, pageLayout);
+    expectLayoutDoc(docRef.getLastSpaceReference(), false);
+    return docRef;
+  }
+
+  private void expectPageLayout(DocumentReference docRef, String layoutName) throws Exception {
+    XWikiDocument doc = new XWikiDocument(docRef);
+    if (layoutName != null) {
+      BaseObject pageType = new BaseObject();
+      pageType.setXClassReference(PageTypeClass.CLASS_REF.getDocRef(getWikiRef()));
+      pageType.setStringValue(PageTypeClass.PAGE_LAYOUT.getName(), layoutName);
+      doc.addXObject(pageType);
+    }
+    expect(xwiki.getDocument(docRef, context)).andReturn(doc).anyTimes();
   }
 
   @Test
