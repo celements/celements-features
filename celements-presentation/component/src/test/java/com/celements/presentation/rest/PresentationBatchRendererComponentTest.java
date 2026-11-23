@@ -18,6 +18,7 @@ import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.xwiki.velocity.VelocityExecutionProp.VELOCITY_CONTEXT;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -32,6 +33,7 @@ import org.xwiki.component.manager.ComponentManager;
 import org.xwiki.context.Execution;
 import org.xwiki.context.ExecutionContext;
 import org.xwiki.model.reference.DocumentReference;
+import org.xwiki.velocity.VelocityManager;
 
 import com.celements.common.classes.IClassCollectionRole;
 import com.celements.common.test.AbstractComponentTest;
@@ -46,6 +48,7 @@ import com.celements.web.service.IWebUtilsService;
 import com.xpn.xwiki.XWiki;
 import com.xpn.xwiki.XWikiContext;
 import com.xpn.xwiki.XWikiException;
+import com.xpn.xwiki.api.Context;
 import com.xpn.xwiki.doc.XWikiDocument;
 import com.xpn.xwiki.objects.BaseObject;
 
@@ -59,8 +62,10 @@ public class PresentationBatchRendererComponentTest extends AbstractComponentTes
     private DocumentReference firstRef;
     private DocumentReference secondRef;
     private PresentationDefinition definition;
+    private ExecutionContext originalExecutionContext;
     private XWikiContext originalContext;
     private VelocityContext originalVelocityContext;
+    private XWikiDocument originalDocument;
 
     @Before
     public void prepareTest() throws Exception {
@@ -73,10 +78,11 @@ public class PresentationBatchRendererComponentTest extends AbstractComponentTes
         secondRef = new DocumentReference(DEFAULT_DB, "Content", "Second");
         definition = new PresentationDefinition(new DocumentReference(DEFAULT_DB, "Config", "WebHome"),
                 firstRef.getLastSpaceReference(), "", "default", "presentation");
+        originalExecutionContext = execution.getContext();
         originalContext = getXContext();
-        originalVelocityContext = new VelocityContext();
-        originalContext.put("vcontext", originalVelocityContext);
-        execution.getContext().setProperty("velocityContext", originalVelocityContext);
+        originalDocument = new XWikiDocument(definition.configRef());
+        originalContext.setDoc(originalDocument);
+        originalVelocityContext = getBeanFactory().getBean(VelocityManager.class).getVelocityContext();
     }
 
     @Test
@@ -154,7 +160,11 @@ public class PresentationBatchRendererComponentTest extends AbstractComponentTes
         expectCommonResponseMetadata();
         expect(renderCommand.renderCelementsDocument(eq(firstRef), eq("view"))).andReturn(firstHtml);
         XWikiException failure = new XWikiException();
-        expect(renderCommand.renderCelementsDocument(eq(secondRef), eq("view"))).andThrow(failure);
+        AtomicInteger invocation = new AtomicInteger();
+        expect(renderCommand.renderCelementsDocument(eq(secondRef), eq("view"))).andAnswer(() -> {
+            assertIsolatedAndMutate(invocation);
+            throw failure;
+        });
         replayDefault(renderCommand);
         try {
             batchRenderer.render(definition, List.of(firstRef, secondRef), navigation,
@@ -202,11 +212,21 @@ public class PresentationBatchRendererComponentTest extends AbstractComponentTes
     private void assertIsolatedAndMutate(AtomicInteger invocation) {
         ExecutionContext executionContext = execution.getContext();
         XWikiContext isolatedContext = executionContext.get(XWIKI_CONTEXT).orElseThrow();
-        VelocityContext isolatedVelocity = (VelocityContext) executionContext.getProperty("velocityContext");
+        VelocityContext isolatedVelocity = executionContext.get(VELOCITY_CONTEXT).orElseThrow();
         assertNotSame(originalContext, isolatedContext);
         assertNotSame(originalVelocityContext, isolatedVelocity);
+        assertSame(isolatedVelocity, isolatedContext.get("vcontext"));
+        assertSame(originalDocument, isolatedContext.getDoc());
+        assertFalse(isolatedContext.isFinished());
         assertFalse(isolatedContext.containsKey("slideLeak"));
         assertFalse(isolatedVelocity.containsKey("slideLeak"));
+        Context wrapper = (Context) isolatedVelocity.get("context");
+        assertSame(wrapper, isolatedVelocity.get("xcontext"));
+        assertNotSame(originalVelocityContext.get("context"), wrapper);
+        wrapper.setFinished(true);
+        assertTrue(isolatedContext.isFinished());
+        assertFalse(originalContext.isFinished());
+        isolatedContext.setDoc(new XWikiDocument(firstRef));
         int slideNumber = invocation.incrementAndGet();
         isolatedContext.put("slideLeak", slideNumber);
         isolatedVelocity.put("slideLeak", slideNumber);
@@ -222,8 +242,11 @@ public class PresentationBatchRendererComponentTest extends AbstractComponentTes
     }
 
     private void assertOriginalContextsRestored() {
+        assertSame(originalExecutionContext, execution.getContext());
         assertSame(originalContext, execution.getContext().get(XWIKI_CONTEXT).orElseThrow());
-        assertSame(originalVelocityContext, execution.getContext().getProperty("velocityContext"));
+        assertSame(originalVelocityContext, execution.getContext().get(VELOCITY_CONTEXT).orElseThrow());
+        assertSame(originalVelocityContext, originalContext.get("vcontext"));
+        assertSame(originalDocument, originalContext.getDoc());
         assertFalse(originalContext.containsKey("slideLeak"));
         assertFalse(originalVelocityContext.containsKey("slideLeak"));
     }
