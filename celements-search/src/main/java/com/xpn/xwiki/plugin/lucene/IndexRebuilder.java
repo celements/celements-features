@@ -33,7 +33,7 @@ import java.util.Optional;
 import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
@@ -153,7 +153,7 @@ public class IndexRebuilder implements LuceneIndexRebuildService {
    */
   private final AtomicReference<IndexUpdater> indexUpdater = new AtomicReference<>();
 
-  private final Executor rebuildExecutor = Executors.newSingleThreadExecutor();
+  final ExecutorService rebuildExecutor = Executors.newSingleThreadExecutor();
   private final Queue<IndexRebuildFuture> rebuildQueue = new LinkedList<>();
   private final AtomicReference<Instant> paused = new AtomicReference<>(Instant.MIN);
 
@@ -378,12 +378,12 @@ public class IndexRebuilder implements LuceneIndexRebuildService {
     BooleanQuery query = new BooleanQuery();
     ref.extractRef(DocumentReference.class)
         .ifPresent(docRef -> query.add(new TermQuery(new Term(IndexFields.DOCUMENT_NAME_S,
-            docRef.getName().toLowerCase())), BooleanClause.Occur.MUST));
+            docRef.getName())), BooleanClause.Occur.MUST));
     ref.extractRef(SpaceReference.class)
         .ifPresent(spaceRef -> query.add(new TermQuery(new Term(IndexFields.DOCUMENT_SPACE_S,
-            spaceRef.getName().toLowerCase())), BooleanClause.Occur.MUST));
+            spaceRef.getName())), BooleanClause.Occur.MUST));
     WikiReference wikiRef = ref.extractRef(WikiReference.class).get();
-    query.add(new TermQuery(new Term(IndexFields.DOCUMENT_WIKI, wikiRef.getName().toLowerCase())),
+    query.add(new TermQuery(new Term(IndexFields.DOCUMENT_WIKI, wikiRef.getName())),
         BooleanClause.Occur.MUST);
     return query;
   }
