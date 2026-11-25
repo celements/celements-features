@@ -5,11 +5,14 @@
  */
 package com.celements.presentation.rest;
 
+import static com.celements.cells.AbstractRenderStrategy.EXEC_CTX_KEY;
 import static com.celements.execution.XWikiExecutionProp.XWIKI_CONTEXT;
 import static org.xwiki.velocity.VelocityExecutionProp.VELOCITY_CONTEXT;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import javax.inject.Inject;
 
@@ -33,6 +36,8 @@ import com.xpn.xwiki.XWikiException;
 @Component
 public class PresentationBatchRenderer {
 
+    private static final String CELL_IDS = EXEC_CTX_KEY + ".ids";
+
     private final ComponentManager componentManager;
     private final ModelUtils modelUtils;
     private final Execution execution;
@@ -51,10 +56,12 @@ public class PresentationBatchRenderer {
         try {
             PresentationContentRenderer renderer = componentManager.lookup(PresentationContentRenderer.class,
                     renderType.componentHint());
+            Set<String> existingCellIds = execution.getContext().getProperty(CELL_IDS, Set.of());
+            Set<String> batchCellIds = new HashSet<>(existingCellIds);
             for (DocumentReference slideRef : slideRefs) {
                 failingSlide = slideRef;
                 renderedSlides.add(new RenderedSlideResponse(modelUtils.serializeRefLocal(slideRef),
-                        navigation.getUniqueId(slideRef), renderIsolated(renderer, slideRef)));
+                        navigation.getUniqueId(slideRef), renderIsolated(renderer, slideRef, batchCellIds)));
             }
             return List.copyOf(renderedSlides);
         } catch (ComponentLookupException | RuntimeException | XWikiException | XWikiVelocityException exc) {
@@ -65,13 +72,16 @@ public class PresentationBatchRenderer {
         }
     }
 
-    private String renderIsolated(PresentationContentRenderer renderer, DocumentReference slideRef)
+    private String renderIsolated(PresentationContentRenderer renderer, DocumentReference slideRef,
+            Set<String> batchCellIds)
             throws ComponentLookupException, XWikiException, XWikiVelocityException {
         ExecutionContext original = execution.getContext();
         XWikiContext isolatedXWiki = original.get(XWIKI_CONTEXT).orElseThrow().clone();
         ExecutionContext isolated = new ExecutionContext();
         isolated.setProperties(original.getProperties());
         isolated.set(XWIKI_CONTEXT, isolatedXWiki);
+        // The fragments share a DOM, so keep the cell ID registry across the batch.
+        isolated.setProperty(CELL_IDS, batchCellIds);
         execution.pushContext(isolated);
         try {
             isolated.set(VELOCITY_CONTEXT, isolateVelocityContext(original, isolatedXWiki));

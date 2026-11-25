@@ -22,6 +22,7 @@ import static org.xwiki.velocity.VelocityExecutionProp.VELOCITY_CONTEXT;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -35,13 +36,20 @@ import org.xwiki.context.ExecutionContext;
 import org.xwiki.model.reference.DocumentReference;
 import org.xwiki.velocity.VelocityManager;
 
+import com.celements.cells.div.CellRenderStrategy;
+import com.celements.cells.div.DivWriter;
 import com.celements.common.classes.IClassCollectionRole;
 import com.celements.common.test.AbstractComponentTest;
+import com.celements.model.access.IModelAccessFacade;
 import com.celements.model.util.ModelUtils;
 import com.celements.navigation.INavigation;
+import com.celements.navigation.TreeNode;
 import com.celements.navigation.presentation.PresentationContentRenderer;
 import com.celements.navigation.presentation.RenderedContentPresentationType;
 import com.celements.navigation.presentation.RenderedExtractPresentationType;
+import com.celements.pagetype.PageTypeReference;
+import com.celements.pagetype.service.IPageTypeResolverRole;
+import com.celements.pagetype.service.IPageTypeRole;
 import com.celements.rendering.RenderCommand;
 import com.celements.web.classcollections.DocumentDetailsClasses;
 import com.celements.web.service.IWebUtilsService;
@@ -114,6 +122,39 @@ public class PresentationBatchRendererComponentTest extends AbstractComponentTes
     }
 
     @Test
+    public void test_renderedContent_emitsSharedCellIdOnlyOnceAcrossSlides() throws Exception {
+        registerComponentMocks(IModelAccessFacade.class, IPageTypeResolverRole.class, IPageTypeRole.class);
+        var cellRef = new DocumentReference(DEFAULT_DB, "Layout", "SharedCell");
+        var cell = new TreeNode(cellRef, null, 0);
+        var cellDocument = new XWikiDocument(cellRef);
+        var pageType = new PageTypeReference("RichText", "provider", List.of());
+        expect(getMock(IModelAccessFacade.class).getDocument(cellRef)).andReturn(cellDocument).times(2);
+        expect(getMock(IModelAccessFacade.class).getOrCreateDocument(cellRef)).andReturn(cellDocument).times(2);
+        expect(getMock(IPageTypeResolverRole.class).resolvePageTypeReferenceWithDefault(cellRef))
+                .andReturn(pageType).times(4);
+        expect(getMock(IPageTypeRole.class).getPageTypeConfigForPageTypeRef(pageType)).andReturn(null).times(4);
+        RenderCommand renderCommand = createMock(RenderCommand.class);
+        PresentationContentRenderer renderer = getBeanFactory().getBean("renderedContent",
+                PresentationContentRenderer.class);
+        ReflectionTestUtils.setField(renderer, "renderCmd", renderCommand);
+        expectCommonResponseMetadata();
+        expect(renderCommand.renderCelementsDocument(firstRef, "view")).andAnswer(() -> renderCell(cell));
+        expect(renderCommand.renderCelementsDocument(secondRef, "view")).andAnswer(() -> renderCell(cell));
+        var originalProperties = new HashMap<>(originalExecutionContext.getProperties());
+        replayDefault(renderCommand);
+
+        var result = batchRenderer.render(definition, List.of(firstRef, secondRef), navigation,
+                PresentationRenderType.RENDERED_CONTENT);
+
+        assertTrue(result.get(0).renderedContent().contains(" id=\"cell:Layout.SharedCell\""));
+        assertTrue(result.get(1).renderedContent().contains("data-cell-ref=\"Layout.SharedCell\""));
+        assertFalse(result.get(1).renderedContent().contains(" id="));
+        assertEquals(originalProperties, originalExecutionContext.getProperties());
+        assertOriginalContextsRestored();
+        verifyDefault(renderCommand);
+    }
+
+    @Test
     public void test_renderedExtract_registeredRendererUsesFixturesInOrderAndIsolation() throws Exception {
         String firstHtml = fixture("rendered-extract-first.html");
         String secondHtml = fixture("rendered-extract-second.html");
@@ -176,6 +217,14 @@ public class PresentationBatchRendererComponentTest extends AbstractComponentTes
         }
         verifyDefault(renderCommand);
         assertOriginalContextsRestored();
+    }
+
+    private String renderCell(TreeNode cell) {
+        var writer = new DivWriter();
+        var strategy = new CellRenderStrategy(writer, new RenderCommand());
+        strategy.startRenderCell(cell, true, true);
+        strategy.endRenderCell(cell, true, true);
+        return writer.getAsString();
     }
 
     private void expectCommonResponseMetadata() {
