@@ -5,6 +5,7 @@
  */
 package com.celements.presentation.rest;
 
+import static com.celements.execution.XWikiExecutionProp.XWIKI_CONTEXT;
 import static java.util.Objects.requireNonNull;
 import static java.util.Optional.of;
 import static org.easymock.EasyMock.anyObject;
@@ -14,10 +15,14 @@ import static org.easymock.EasyMock.eq;
 import static org.easymock.EasyMock.expect;
 import static org.easymock.EasyMock.expectLastCall;
 import static org.easymock.EasyMock.isA;
+import static org.easymock.EasyMock.not;
 import static org.easymock.EasyMock.same;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
+import static org.xwiki.velocity.VelocityExecutionProp.VELOCITY_CONTEXT;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -33,17 +38,23 @@ import org.xwiki.cache.config.CacheConfiguration;
 import org.xwiki.component.manager.ComponentManager;
 import org.xwiki.context.Execution;
 import org.xwiki.model.reference.DocumentReference;
+import org.xwiki.script.service.ScriptService;
 
+import com.celements.auth.user.User;
 import com.celements.common.classes.IClassCollectionRole;
 import com.celements.common.test.AbstractComponentTest;
 import com.celements.model.access.IModelAccessFacade;
+import com.celements.model.context.ModelContext;
 import com.celements.model.util.ModelUtils;
 import com.celements.navigation.INavigation;
 import com.celements.navigation.presentation.PresentationContentRenderer;
+import com.celements.pagetype.IPageTypeConfig;
+import com.celements.pagetype.PageTypeReference;
 import com.celements.pagetype.service.IPageTypeResolverRole;
 import com.celements.pagetype.service.IPageTypeRole;
 import com.celements.rendering.RenderCommand;
 import com.celements.web.classcollections.DocumentDetailsClasses;
+import com.celements.web.service.CelementsWebScriptService;
 import com.celements.web.service.IWebUtilsService;
 import com.google.common.base.Optional;
 import com.xpn.xwiki.XWiki;
@@ -52,6 +63,7 @@ import com.xpn.xwiki.XWikiContext;
 import com.xpn.xwiki.doc.XWikiDocument;
 import com.xpn.xwiki.objects.BaseObject;
 import com.xpn.xwiki.user.api.XWikiRightService;
+import com.xpn.xwiki.user.api.XWikiUser;
 
 public class PresentationRendererFidelityTest extends AbstractComponentTest {
 
@@ -88,7 +100,61 @@ public class PresentationRendererFidelityTest extends AbstractComponentTest {
     }
 
     @Test
-    public void test_renderedContent_realRenderCommandRendersRichDocuments() throws Exception {
+    public void test_renderedContent_richTextScriptServiceWithoutLegacyAlias() throws Exception {
+        var executionContext = getBeanFactory().getBean(Execution.class).getContext();
+        var originalVelocity = executionContext.get(VELOCITY_CONTEXT).orElseThrow();
+        XWikiContext originalContext = getXContext();
+        assertNotNull(originalVelocity.get("services"));
+        originalContext.remove("vcontext");
+        var scriptService = createDefaultMock(CelementsWebScriptService.class);
+        registerComponentMock(ScriptService.class, "celementsweb", scriptService);
+        var pageType = new PageTypeReference("RichText", "java", List.of());
+        var pageTypeConfig = createDefaultMock(IPageTypeConfig.class);
+        var doc = new XWikiDocument(firstRef);
+        String html = "<p>Gespeicherter Inhalt</p>";
+        expect(modelAccess.getOrCreateDocument(firstRef)).andReturn(doc);
+        expect(pageTypeResolver.resolvePageTypeReference(same(doc))).andReturn(Optional.of(pageType));
+        expect(getMock(IPageTypeRole.class).getPageTypeConfigForPageTypeRef(pageType)).andReturn(pageTypeConfig);
+        expect(pageTypeConfig.getRenderTemplateForRenderMode("view")).andReturn(":celTemplates/RichTextView.vm");
+        expect(webUtilsService.getTranslatedDiscTemplateContent(":celTemplates/RichTextView.vm", DEFAULT_LANG, ""))
+                .andReturn("""
+                        #set($contentDoc = $celldoc)
+                        #set($rteContent = $services.celementsweb.renderDocument($!contentDoc.documentReference, $context.language))
+                        #set($imgUseMaps = $services.celementsweb.getImageUseMaps($rteContent))
+                        $rteContent
+                        """);
+        expect(scriptService.renderDocument(firstRef, DEFAULT_LANG)).andReturn(html);
+        expect(scriptService.getImageUseMaps(html)).andReturn(List.of());
+        expect(rightService.hasAccessLevel(eq("view"), eq("XWiki.XWikiGuest"), eq("xwikidb:Content.First"),
+                anyObject(XWikiContext.class))).andReturn(true);
+        expect(modelUtils.serializeRefLocal(firstRef)).andReturn("Content.First");
+        expect(navigation.getUniqueId(firstRef)).andReturn("N1:Content:Content.First");
+        RenderingCacheMocks cacheMocks = expectRenderingEngineInitialization();
+
+        replayDefault(cacheMocks.factory(), cacheMocks.cache());
+        PresentationContentRenderer renderer = getBeanFactory().getBean("renderedContent",
+                PresentationContentRenderer.class);
+        ReflectionTestUtils.setField(renderer, "renderCmd", realRenderCommand());
+        List<RenderedSlideResponse> result = batchRenderer.render(definition, List.of(firstRef), navigation,
+                PresentationRenderType.RENDERED_CONTENT);
+
+        assertEquals(List.of(new RenderedSlideResponse("Content.First", "N1:Content:Content.First", html + "\n")),
+                result);
+        assertSame(originalContext, executionContext.get(XWIKI_CONTEXT).orElseThrow());
+        assertSame(originalVelocity, executionContext.get(VELOCITY_CONTEXT).orElseThrow());
+        assertFalse(originalContext.containsKey("vcontext"));
+        verifyDefault(cacheMocks.factory(), cacheMocks.cache());
+    }
+
+    @Test
+    public void test_renderedContent_realRenderCommandRendersRichDocumentsForSignedInCaller() throws Exception {
+        ModelContext modelContext = getBeanFactory().getBean(ModelContext.class);
+        Execution execution = getBeanFactory().getBean(Execution.class);
+        var originalExecutionContext = execution.getContext();
+        XWikiContext originalContext = getXContext();
+        String callerName = "XWiki.PresentationReader";
+        User caller = createMock(User.class);
+        expect(caller.asXWikiUser()).andReturn(new XWikiUser(callerName));
         String firstHtml = fixture("rendered-content-first.html");
         String secondHtml = fixture("rendered-content-second.html");
         XWikiDocument firstDoc = contentDocument(firstRef,
@@ -97,21 +163,22 @@ public class PresentationRendererFidelityTest extends AbstractComponentTest {
                 secondHtml.replace("</video>", "</video><span data-document=\"$celldoc.fullName\"></span>"));
         expectContentDocument(firstRef, firstDoc);
         expectContentDocument(secondRef, secondDoc);
-        expect(rightService.hasAccessLevel(eq("view"), eq("XWiki.XWikiGuest"), eq("xwikidb:Content.First"),
-                anyObject(XWikiContext.class))).andReturn(true);
-        expect(rightService.hasAccessLevel(eq("view"), eq("XWiki.XWikiGuest"), eq("xwikidb:Content.Second"),
-                anyObject(XWikiContext.class))).andReturn(true);
+        expect(rightService.hasAccessLevel(eq("view"), eq(callerName), eq("xwikidb:Content.First"),
+                not(same(originalContext)))).andReturn(true);
+        expect(rightService.hasAccessLevel(eq("view"), eq(callerName), eq("xwikidb:Content.Second"),
+                not(same(originalContext)))).andReturn(true);
         expectResponseMetadata();
         RenderingCacheMocks cacheMocks = expectRenderingEngineInitialization();
-        replayDefault(cacheMocks.factory(), cacheMocks.cache());
 
+        replayDefault(caller, cacheMocks.factory(), cacheMocks.cache());
+        modelContext.setCurrentUser(caller);
+        XWikiUser originalCaller = originalContext.getXWikiUser();
         PresentationContentRenderer renderer = getBeanFactory().getBean("renderedContent",
                 PresentationContentRenderer.class);
         ReflectionTestUtils.setField(renderer, "renderCmd", realRenderCommand());
         List<RenderedSlideResponse> result = batchRenderer.render(definition, List.of(firstRef, secondRef), navigation,
                 PresentationRenderType.RENDERED_CONTENT);
 
-        verifyDefault(cacheMocks.factory(), cacheMocks.cache());
         assertEquals("Content.First", result.get(0).fullName());
         assertTrue(result.get(0).renderedContent().contains("data-document=\"Content.First\""));
         assertTrue(result.get(0).renderedContent().contains("/xwiki/bin/download/Content/First/guide.pdf"));
@@ -120,6 +187,11 @@ public class PresentationRendererFidelityTest extends AbstractComponentTest {
         assertTrue(result.get(1).renderedContent().contains("data-document=\"Content.Second\""));
         assertTrue(result.get(1).renderedContent().contains("<video"));
         assertFalse(result.get(0).renderedContent().startsWith("<div "));
+        assertSame(originalExecutionContext, execution.getContext());
+        assertSame(originalContext, getXContext());
+        assertSame(originalCaller, getXContext().getXWikiUser());
+        assertEquals(callerName, modelContext.getUserName());
+        verifyDefault(caller, cacheMocks.factory(), cacheMocks.cache());
     }
 
     @Test

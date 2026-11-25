@@ -5,10 +5,14 @@
  */
 package com.celements.presentation.rest;
 
+import static com.celements.cells.AbstractRenderStrategy.EXEC_CTX_KEY;
 import static com.celements.execution.XWikiExecutionProp.XWIKI_CONTEXT;
+import static org.xwiki.velocity.VelocityExecutionProp.VELOCITY_CONTEXT;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import javax.inject.Inject;
 
@@ -19,6 +23,9 @@ import org.xwiki.component.manager.ComponentManager;
 import org.xwiki.context.Execution;
 import org.xwiki.context.ExecutionContext;
 import org.xwiki.model.reference.DocumentReference;
+import org.xwiki.velocity.VelocityContextFactory;
+import org.xwiki.velocity.VelocityManager;
+import org.xwiki.velocity.XWikiVelocityException;
 
 import com.celements.model.util.ModelUtils;
 import com.celements.navigation.INavigation;
@@ -28,6 +35,8 @@ import com.xpn.xwiki.XWikiException;
 
 @Component
 public class PresentationBatchRenderer {
+
+    private static final String CELL_IDS = EXEC_CTX_KEY + ".ids";
 
     private final ComponentManager componentManager;
     private final ModelUtils modelUtils;
@@ -47,13 +56,15 @@ public class PresentationBatchRenderer {
         try {
             PresentationContentRenderer renderer = componentManager.lookup(PresentationContentRenderer.class,
                     renderType.componentHint());
+            Set<String> existingCellIds = execution.getContext().getProperty(CELL_IDS, Set.of());
+            Set<String> batchCellIds = new HashSet<>(existingCellIds);
             for (DocumentReference slideRef : slideRefs) {
                 failingSlide = slideRef;
                 renderedSlides.add(new RenderedSlideResponse(modelUtils.serializeRefLocal(slideRef),
-                        navigation.getUniqueId(slideRef), renderIsolated(renderer, slideRef)));
+                        navigation.getUniqueId(slideRef), renderIsolated(renderer, slideRef, batchCellIds)));
             }
             return List.copyOf(renderedSlides);
-        } catch (ComponentLookupException | RuntimeException | XWikiException exc) {
+        } catch (ComponentLookupException | RuntimeException | XWikiException | XWikiVelocityException exc) {
             String diagnostic = "Failed presentation [" + PresentationDiagnostic.safeReference(definition.configRef())
                     + "] slide [" + PresentationDiagnostic.safeReference(failingSlide) + "] renderer hint ["
                     + renderType.componentHint() + "]";
@@ -61,32 +72,35 @@ public class PresentationBatchRenderer {
         }
     }
 
-    private String renderIsolated(PresentationContentRenderer renderer, DocumentReference slideRef)
-            throws XWikiException {
-        ExecutionContext executionContext = execution.getContext();
-        XWikiContext originalContext = executionContext.get(XWIKI_CONTEXT).orElseThrow();
-        Object originalVelocityProperty = executionContext.getProperty("velocityContext");
-        XWikiContext isolatedContext = originalContext.clone();
-        VelocityContext isolatedVelocityContext = cloneVelocityContext(originalContext);
-        isolatedContext.put("vcontext", isolatedVelocityContext);
+    private String renderIsolated(PresentationContentRenderer renderer, DocumentReference slideRef,
+            Set<String> batchCellIds)
+            throws ComponentLookupException, XWikiException, XWikiVelocityException {
+        ExecutionContext original = execution.getContext();
+        XWikiContext isolatedXWiki = original.get(XWIKI_CONTEXT).orElseThrow().clone();
+        ExecutionContext isolated = new ExecutionContext();
+        isolated.setProperties(original.getProperties());
+        isolated.set(XWIKI_CONTEXT, isolatedXWiki);
+        // The fragments share a DOM, so keep the cell ID registry across the batch.
+        isolated.setProperty(CELL_IDS, batchCellIds);
+        execution.pushContext(isolated);
         try {
-            executionContext.setProperty(XWIKI_CONTEXT.getName(), isolatedContext);
-            executionContext.setProperty("velocityContext", isolatedVelocityContext);
+            isolated.set(VELOCITY_CONTEXT, isolateVelocityContext(original, isolatedXWiki));
+            // RenderCommand requires the alias, which the manager sets after rebinding the legacy wrappers.
+            componentManager.lookup(VelocityManager.class).getVelocityContext();
             return renderer.renderInnerContent(slideRef);
         } finally {
-            executionContext.setProperty(XWIKI_CONTEXT.getName(), originalContext);
-            if (originalVelocityProperty != null) {
-                executionContext.setProperty("velocityContext", originalVelocityProperty);
-            } else {
-                executionContext.removeProperty("velocityContext");
-            }
+            execution.popContext();
         }
     }
 
-    private VelocityContext cloneVelocityContext(XWikiContext context) {
-        Object velocityContext = context.get("vcontext");
-        return velocityContext instanceof VelocityContext existing ? (VelocityContext) existing.clone()
-                : new VelocityContext();
+    private VelocityContext isolateVelocityContext(ExecutionContext original, XWikiContext isolatedXWiki)
+            throws ComponentLookupException, XWikiVelocityException {
+        VelocityContext existing = original.get(VELOCITY_CONTEXT).orElse(null);
+        if (existing == null && isolatedXWiki.get("vcontext") instanceof VelocityContext legacy) {
+            existing = legacy;
+        }
+        return existing != null ? (VelocityContext) existing.clone()
+                : componentManager.lookup(VelocityContextFactory.class).createContext();
     }
 
 }

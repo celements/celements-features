@@ -16,6 +16,7 @@ import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.xwiki.velocity.VelocityExecutionProp.VELOCITY_CONTEXT;
 
 import java.util.Collection;
 import java.util.List;
@@ -29,7 +30,9 @@ import org.junit.runners.Parameterized;
 import org.xwiki.component.manager.ComponentManager;
 import org.xwiki.context.Execution;
 import org.xwiki.context.ExecutionContext;
+import org.xwiki.context.internal.DefaultExecution;
 import org.xwiki.model.reference.DocumentReference;
+import org.xwiki.velocity.VelocityManager;
 
 import com.celements.model.util.ModelUtils;
 import com.celements.navigation.INavigation;
@@ -65,20 +68,24 @@ public class PresentationBatchRendererTest {
     }
 
     @Before
-    public void prepareTest() {
+    public void prepareTest() throws Exception {
         componentManager = createMock(ComponentManager.class);
         modelUtils = createMock(ModelUtils.class);
         navigation = createMock(INavigation.class);
         renderer = createMock(PresentationContentRenderer.class);
-        execution = createMock(Execution.class);
+        execution = new DefaultExecution();
         executionContext = new ExecutionContext();
         originalContext = new XWikiContext();
         originalVelocityContext = new VelocityContext();
         originalContext.put("vcontext", originalVelocityContext);
         executionContext.setProperty(XWIKI_CONTEXT.getName(), originalContext);
         executionContext.setProperty("velocityContext", originalVelocityContext);
-        expect(execution.getContext()).andReturn(executionContext).times(2);
-        replay(execution);
+        execution.setContext(executionContext);
+        VelocityManager velocityManager = createMock(VelocityManager.class);
+        expect(componentManager.lookup(VelocityManager.class)).andReturn(velocityManager).times(2);
+        expect(velocityManager.getVelocityContext())
+                .andAnswer(() -> execution.getContext().get(VELOCITY_CONTEXT).orElseThrow()).anyTimes();
+        replay(velocityManager);
         batchRenderer = new PresentationBatchRenderer(componentManager, modelUtils, execution);
         firstRef = new DocumentReference("xwiki", "Content", "First");
         secondRef = new DocumentReference("xwiki", "Content", "Second");
@@ -102,11 +109,12 @@ public class PresentationBatchRendererTest {
                 renderType);
         assertEquals(List.of(new RenderedSlideResponse("Content.First", "N1:Content:Content.First", "slide 1"),
                 new RenderedSlideResponse("Content.Second", "N1:Content:Content.Second", "slide 2")), result);
+        assertSame(executionContext, execution.getContext());
         assertSame(originalContext, executionContext.getProperty(XWIKI_CONTEXT.getName()));
         assertSame(originalVelocityContext, executionContext.getProperty("velocityContext"));
         assertFalse(originalContext.containsKey("slideLeak"));
         assertFalse(originalVelocityContext.containsKey("slideLeak"));
-        verify(componentManager, modelUtils, navigation, renderer, execution);
+        verify(componentManager, modelUtils, navigation, renderer);
     }
 
     @Test
@@ -130,15 +138,17 @@ public class PresentationBatchRendererTest {
             assertTrue(exc.getDiagnosticContext().contains("WebHome"));
             assertTrue(exc.getDiagnosticContext().contains("Second"));
         }
+        assertSame(executionContext, execution.getContext());
         assertSame(originalContext, executionContext.getProperty(XWIKI_CONTEXT.getName()));
         assertSame(originalVelocityContext, executionContext.getProperty("velocityContext"));
-        verify(componentManager, modelUtils, navigation, renderer, execution);
+        verify(componentManager, modelUtils, navigation, renderer);
     }
 
     private String renderAndMutate(AtomicInteger invocation) {
         int slideNumber = invocation.incrementAndGet();
-        XWikiContext isolatedContext = (XWikiContext) executionContext.getProperty(XWIKI_CONTEXT.getName());
-        VelocityContext isolatedVelocity = (VelocityContext) executionContext.getProperty("velocityContext");
+        ExecutionContext isolated = execution.getContext();
+        XWikiContext isolatedContext = isolated.get(XWIKI_CONTEXT).orElseThrow();
+        VelocityContext isolatedVelocity = isolated.get(VELOCITY_CONTEXT).orElseThrow();
         assertNotSame(originalContext, isolatedContext);
         assertNotSame(originalVelocityContext, isolatedVelocity);
         assertFalse(isolatedContext.containsKey("slideLeak"));
